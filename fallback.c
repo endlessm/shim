@@ -242,9 +242,9 @@ add_boot_option(EFI_DEVICE_PATH *hddp, EFI_DEVICE_PATH *fulldp,
 			cursor += DevicePathSize(hddp);
 			StrCpy((CHAR16 *)cursor, arguments);
 
-			console_print(L"Creating boot entry \"%s\" with label \"%s\" "
-				      L"for file \"%s\"\n",
-				      varname, label, filename);
+			VerbosePrint(L"Creating boot entry \"%s\" with label \"%s\" "
+				     L"for file \"%s\"\n",
+				     varname, label, filename);
 
 			if (!first_new_option) {
 				first_new_option = DuplicateDevicePath(fulldp);
@@ -1023,7 +1023,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 		return efi_status;
 	}
 
-	console_print(L"System BootOrder not found.  Initializing defaults.\n");
+	VerbosePrint(L"System BootOrder not found.  Initializing defaults.\n");
 
 	set_boot_order();
 
@@ -1042,7 +1042,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 		VerbosePrint(L"tpm present, resetting system\n");
 	}
 
-	console_print(L"Reset System\n");
+	VerbosePrint(L"Reset System\n");
 
 	if (get_fallback_verbose()) {
 		console_print(L"Verbose enabled, sleeping for half a second\n");
