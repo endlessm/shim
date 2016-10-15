@@ -1,0 +1,3 @@
+shim*.efi /usr/lib/shim
+mm*.efi.signed /usr/lib/shim
+fb*.efi.signed /usr/lib/shim

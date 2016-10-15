@@ -1,0 +1,129 @@
+From d51739a416400ad348d8a1c7e3886abce11fff1b Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 7 Apr 2015 11:59:25 -0400
+Subject: [PATCH] gcc 5.0 changes some include bits, so copy what arm does on
+ x86.
+
+Basically they messed around with stdarg some and now we need to do it
+the other way.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ Cryptlib/Include/OpenSslSupport.h |    4 +++-
+ Cryptlib/Makefile                 |    3 ++-
+ Cryptlib/OpenSSL/Makefile         |    5 +++--
+ Makefile                          |   17 ++++++-----------
+ MokManager.c                      |    1 +
+ 5 files changed, 15 insertions(+), 15 deletions(-)
+
+Index: b/Cryptlib/Include/OpenSslSupport.h
+===================================================================
+--- a/Cryptlib/Include/OpenSslSupport.h
++++ b/Cryptlib/Include/OpenSslSupport.h
+@@ -34,7 +34,7 @@ typedef VOID  *FILE;
+ //
+ // Map all va_xxxx elements to VA_xxx defined in MdePkg/Include/Base.h
+ //
+-#if !defined(__CC_ARM) // if va_list is not already defined
++#if !defined(__CC_ARM) || defined(_STDARG_H) // if va_list is not already defined
+ /*
+  * These are now unconditionally #defined by GNU_EFI's efistdarg.h,
+  * so we should #undef them here before providing a new definition.
+@@ -94,7 +94,9 @@ typedef __builtin_va_list VA_LIST;
+    portably, hence it is provided by a Standard C header file.
+    For pre-Standard C compilers, here is a version that usually works
+    (but watch out!): */
++#ifndef offsetof
+ #define offsetof(type, member) ( (int) & ((type*)0) -> member )
++#endif
+ 
+ //
+ // Basic types from EFI Application Toolkit required to buiild Open SSL
+Index: b/Cryptlib/Makefile
+===================================================================
+--- a/Cryptlib/Makefile
++++ b/Cryptlib/Makefile
+@@ -2,7 +2,8 @@
+ EFI_INCLUDES	= -IInclude -I$(EFI_INCLUDE) -I$(EFI_INCLUDE)/$(ARCH) -I$(EFI_INCLUDE)/protocol
+ 
+ CFLAGS		= -std=gnu89 -ggdb -O0 -I. -fno-stack-protector -fno-strict-aliasing -fpic -fshort-wchar \
+-		  -Wall $(EFI_INCLUDES)
++		  -Wall $(EFI_INCLUDES) \
++		  -ffreestanding -I$(shell $(CC) -print-file-name=include)
+ 
+ ifeq ($(ARCH),x86_64)
+ 	CFLAGS	+= -mno-mmx -mno-sse -mno-red-zone -nostdinc -maccumulate-outgoing-args \
+Index: b/Cryptlib/OpenSSL/Makefile
+===================================================================
+--- a/Cryptlib/OpenSSL/Makefile
++++ b/Cryptlib/OpenSSL/Makefile
+@@ -2,6 +2,7 @@
+ EFI_INCLUDES	= -I../Include -I$(EFI_INCLUDE) -I$(EFI_INCLUDE)/$(ARCH) -I$(EFI_INCLUDE)/protocol
+ 
+ CFLAGS		= -std=gnu89 -ggdb -O0 -I. -I.. -I../Include/ -Icrypto -fno-stack-protector -fno-strict-aliasing -fpic -fshort-wchar -nostdinc \
++		  -ffreestanding -I$(shell $(CC) -print-file-name=include) \
+ 		  -Wall $(EFI_INCLUDES) -DOPENSSL_SYSNAME_UWIN -DOPENSSL_SYS_UEFI -DL_ENDIAN -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_SOCK -DOPENSSL_NO_CMS -DOPENSSL_NO_JPAKE -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ERR -DOPENSSL_NO_KRB5 -DOPENSSL_NO_DYNAMIC_ENGINE -DGETPID_IS_MEANINGLESS -DOPENSSL_NO_STDIO -DOPENSSL_NO_FP_API -DOPENSSL_NO_DGRAM -DOPENSSL_NO_SHA0 -DOPENSSL_NO_LHASH -DOPENSSL_NO_HW -DOPENSSL_NO_OCSP -DOPENSSL_NO_LOCKING -DOPENSSL_NO_DEPRECATED -DOPENSSL_SMALL_FOOTPRINT -DPEDANTIC
+ 
+ ifeq ($(ARCH),x86_64)
+@@ -13,10 +14,10 @@ ifeq ($(ARCH),ia32)
+ 		-m32 -DTHIRTY_TWO_BIT
+ endif
+ ifeq ($(ARCH),aarch64)
+-	CFLAGS	+= -O2 -DSIXTY_FOUR_BIT_LONG -ffreestanding -I$(shell $(CC) -print-file-name=include)
++	CFLAGS	+= -O2 -DSIXTY_FOUR_BIT_LONG
+ endif
+ ifeq ($(ARCH),arm)
+-	CFLAGS	+= -O2 -DTHIRTY_TWO_BIT -ffreestanding -I$(shell $(CC) -print-file-name=include)
++	CFLAGS	+= -O2 -DTHIRTY_TWO_BIT
+ endif
+ LDFLAGS		= -nostdlib -znocombreloc
+ 
+Index: b/Makefile
+===================================================================
+--- a/Makefile
++++ b/Makefile
+@@ -21,7 +21,8 @@ EFI_LDS		= elf_$(ARCH)_efi.lds
+ DEFAULT_LOADER	:= \\\\grubx64.efi
+ CFLAGS		= -std=gnu89 -ggdb -O0 -fno-stack-protector -fno-strict-aliasing -fpic \
+ 		  -fshort-wchar -Wall -Wsign-compare -Werror -fno-builtin \
+-		  -Werror=sign-compare \
++		  -Werror=sign-compare -ffreestanding \
++		  -I$(shell $(CC) -print-file-name=include) \
+ 		  "-DDEFAULT_LOADER=L\"$(DEFAULT_LOADER)\"" \
+ 		  "-DDEFAULT_LOADER_CHAR=\"$(DEFAULT_LOADER)\"" \
+ 		  $(EFI_INCLUDES)
+@@ -31,19 +32,13 @@ ifneq ($(origin OVERRIDE_SECURITY_POLICY
+ endif
+ 
+ ifeq ($(ARCH),x86_64)
+-	CFLAGS	+= -mno-mmx -mno-sse -mno-red-zone -nostdinc -maccumulate-outgoing-args \
++	CFLAGS	+= -mno-mmx -mno-sse -mno-red-zone -nostdinc \
++		-maccumulate-outgoing-args \
+ 		-DEFI_FUNCTION_WRAPPER -DGNU_EFI_USE_MS_ABI
+ endif
+ ifeq ($(ARCH),ia32)
+-	CFLAGS	+= -mno-mmx -mno-sse -mno-red-zone -nostdinc -maccumulate-outgoing-args -m32
+-endif
+-
+-ifeq ($(ARCH),aarch64)
+-	CFLAGS	+= -ffreestanding -I$(shell $(CC) -print-file-name=include)
+-endif
+-
+-ifeq ($(ARCH),arm)
+-	CFLAGS	+= -ffreestanding -I$(shell $(CC) -print-file-name=include)
++	CFLAGS	+= -mno-mmx -mno-sse -mno-red-zone -nostdinc \
++		-maccumulate-outgoing-args -m32
+ endif
+ 
+ ifneq ($(origin VENDOR_CERT_FILE), undefined)
+Index: b/MokManager.c
+===================================================================
+--- a/MokManager.c
++++ b/MokManager.c
+@@ -1,5 +1,6 @@
+ #include <efi.h>
+ #include <efilib.h>
++#include <stdarg.h>
+ #include <Library/BaseCryptLib.h>
+ #include <openssl/x509.h>
+ #include "shim.h"

@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+# Other vendors, add your certs here.  No sense in using
+# dpkg-vendor --derives-from, because only Canonical-generated binaries will
+# be signed with this key; so if you are building your own shim binary you
+# should be building the other binaries also.
+ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
+	cert=debian/canonical-uefi-ca.der
+else
+	cert=debian/debian-uefi-ca.der
+endif
+
+%:
+	dh $@ --parallel
+
+override_dh_auto_build:
+	dh_auto_build -- EFI_PATH=/usr/lib VENDOR_CERT_FILE=$(cert)
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod a-x debian/shim/usr/lib/shim/shimx64.efi
