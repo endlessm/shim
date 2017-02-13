@@ -409,20 +409,38 @@ add_new_boot_option(EFI_DEVICE_PATH *hddp, EFI_DEVICE_PATH *fulldp,
 }
 
 int
+isxdigit(CHAR16 c)
+{
+	return ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') ||
+		(c >= 'a' && c <= 'f'));
+}
+
+int
 find_boot_option(EFI_DEVICE_PATH *dp, EFI_DEVICE_PATH *fulldp,
                  CHAR16 *filename, CHAR16 *label, CHAR16 *arguments)
 {
-	int i = 0;
-	CHAR16 varname[] = L"Boot0000";
-	CHAR16 hexmap[] = L"0123456789ABCDEF";
+	EFI_STATUS efi_status;
+	int ret = -1;
 
-	for(i = 0; i < nbootorder && i < 0x10000; i++) {
-		varname[4] = hexmap[(bootorder[i] & 0xf000) >> 12];
-		varname[5] = hexmap[(bootorder[i] & 0x0f00) >> 8];
-		varname[6] = hexmap[(bootorder[i] & 0x00f0) >> 4];
-		varname[7] = hexmap[(bootorder[i] & 0x000f) >> 0];
+	UINTN CANDIDATE_SIZE = 256;
+	CHAR16 *varname = AllocateZeroPool(CANDIDATE_SIZE * sizeof(CHAR16));
+	if (!varname) {
+		console_print(L"Could not allocate memory\n");
+		return ret;
+	}
 
-		UINTN candidate_size;
+	while (1) {
+		UINTN candidate_size = CANDIDATE_SIZE;
+		efi_status = gRT->GetNextVariableName(3, &candidate_size,
+						      varname);
+		if (efi_status != EFI_SUCCESS)
+			break;
+
+		if (StrLen(varname) != 8 || StrnCmp(varname, L"Boot", 4) ||
+		    !isxdigit(varname[4]) || !isxdigit(varname[5]) ||
+		    !isxdigit(varname[6]) || !isxdigit(varname[7]))
+			continue;
+
 		CHAR8 *candidate = LibGetVariableAndSize(varname, &global,
 							 &candidate_size);
 		if (!candidate)
@@ -445,9 +463,11 @@ find_boot_option(EFI_DEVICE_PATH *dp, EFI_DEVICE_PATH *fulldp,
 
 		/* at this point, we have duplicate data. */
 		FreePool(candidate);
-		return i;
+		ret = xtoi(varname + 4);
+		break;
 	}
-	return -1;
+	FreePool(varname);
+	return ret;
 }
 
 EFI_STATUS
