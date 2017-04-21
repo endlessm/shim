@@ -268,14 +268,16 @@ do_add_boot_option(int boot_entry_num, EFI_DEVICE_PATH *hddp,
 		return EFI_OUT_OF_RESOURCES;
 
 	int j = 0;
+	int n = 1;
 	newbootorder[0] = boot_entry_num & 0xffff;
 	if (nbootorder) {
 		for (j = 0; j < nbootorder; j++)
-			newbootorder[j+1] = bootorder[j];
+			if (bootorder[j] != boot_entry_num)
+				newbootorder[n++] = bootorder[j];
 		FreePool(bootorder);
 	}
 	bootorder = newbootorder;
-	nbootorder += 1;
+	nbootorder = n;
 #ifdef DEBUG_FALLBACK
 	console_print(L"nbootorder: %d\nBootOrder: ", nbootorder);
 	for (j = 0 ; j < nbootorder ; j++)
