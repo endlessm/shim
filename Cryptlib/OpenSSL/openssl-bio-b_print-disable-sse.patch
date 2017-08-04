@@ -1,0 +1,70 @@
+diff --git a/Cryptlib/OpenSSL/crypto/bio/b_print.c b/Cryptlib/OpenSSL/crypto/bio/b_print.c
+index 90248fa..dfc26bc 100644
+--- a/Cryptlib/OpenSSL/crypto/bio/b_print.c
++++ b/Cryptlib/OpenSSL/crypto/bio/b_print.c
+@@ -129,8 +129,10 @@ static int fmtstr(char **, char **, size_t *, size_t *,
+                   const char *, int, int, int);
+ static int fmtint(char **, char **, size_t *, size_t *,
+                   LLONG, int, int, int, int);
++#ifndef OPENSSL_SYS_UEFI
+ static int fmtfp(char **, char **, size_t *, size_t *,
+                  LDOUBLE, int, int, int);
++#endif
+ static int doapr_outch(char **, char **, size_t *, size_t *, int);
+ static int _dopr(char **sbuffer, char **buffer,
+                  size_t *maxlen, size_t *retlen, int *truncated,
+@@ -173,7 +175,9 @@ _dopr(char **sbuffer,
+ {
+     char ch;
+     LLONG value;
++#ifndef OPENSSL_SYS_UEFI
+     LDOUBLE fvalue;
++#endif
+     char *strvalue;
+     int min;
+     int max;
+@@ -276,10 +280,12 @@ _dopr(char **sbuffer,
+                 cflags = DP_C_LLONG;
+                 ch = *format++;
+                 break;
++#ifndef OPENSSL_SYS_UEFI
+             case 'L':
+                 cflags = DP_C_LDOUBLE;
+                 ch = *format++;
+                 break;
++#endif
+             default:
+                 break;
+             }
+@@ -333,6 +339,7 @@ _dopr(char **sbuffer,
+                             min, max, flags))
+                     return 0;
+                 break;
++#ifndef OPENSSL_SYS_UEFI
+             case 'f':
+                 if (cflags == DP_C_LDOUBLE)
+                     fvalue = va_arg(args, LDOUBLE);
+@@ -358,6 +365,7 @@ _dopr(char **sbuffer,
+                 else
+                     fvalue = va_arg(args, double);
+                 break;
++#endif
+             case 'c':
+                 if(!doapr_outch(sbuffer, buffer, &currlen, maxlen,
+                             va_arg(args, int)))
+@@ -575,6 +583,7 @@ fmtint(char **sbuffer,
+     return 1;
+ }
+ 
++#ifndef OPENSSL_SYS_UEFI
+ static LDOUBLE abs_val(LDOUBLE value)
+ {
+     LDOUBLE result = value;
+@@ -733,6 +742,7 @@ fmtfp(char **sbuffer,
+     }
+     return 1;
+ }
++#endif
+ 
+ #define BUFFER_INC  1024
+ 
