@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+SIG_DIR := debian/signatures/shim-unsigned
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	set -e ; \
+	find "$(SIG_DIR)" -name '*.sig' -printf '%P\n' | \
+	while read sig; do \
+		install -o 0 -g 0 -m 0755 -d "debian/tmp/$${sig%/*}" ; \
+		install -o 0 -g 0 -m 0644 "/$${sig%.sig}" "debian/tmp/$${sig}ned" ; \
+		sbattach --attach "$(SIG_DIR)/$$sig" "debian/tmp/$${sig}ned" ; \
+	done
+
+override_dh_install:
+	dh_install --sourcedir=debian/tmp .
