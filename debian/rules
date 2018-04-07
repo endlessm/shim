@@ -7,6 +7,7 @@
 ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
 	distributor=ubuntu
+COMMON_OPTIONS ?= ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1
 else
 	cert=debian/debian-uefi-ca.der
 	distributor=debian
@@ -24,14 +25,12 @@ ifeq ($(DEB_HOST_ARCH),i386)
 export EFI_ARCH := ia32
 endif
 
-COMMON_OPTIONS = \
+COMMON_OPTIONS += \
 	RELEASE=15 \
 	COMMIT_ID=3beb971b10659cf78144ddc5eeea83501384440c \
 	MAKELEVEL=0 \
 	EFI_PATH=/usr/lib \
 	ENABLE_HTTPBOOT=true \
-	ENABLE_SHIM_CERT=1 \
-	ENABLE_SBSIGN=1 \
 	VENDOR_CERT_FILE=$(cert) \
 	EFIDIR=$(distributor) \
 	$(NULL)

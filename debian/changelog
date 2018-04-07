@@ -2,6 +2,7 @@ shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
 
   [ Philipp Hahn ]
   * debian/rules: fixing permissions no longer required
+  * debian/rules: Disable ephemeral key on Debian.
 
  -- Luca Boccassi <bluca@debian.org>  Fri, 15 Feb 2019 19:50:10 +0000
 
