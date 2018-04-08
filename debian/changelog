@@ -1,3 +1,10 @@
+shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
+
+  [ Philipp Hahn ]
+  * debian/rules: fixing permissions no longer required
+
+ -- Luca Boccassi <bluca@debian.org>  Fri, 15 Feb 2019 19:50:10 +0000
+
 shim (15+1533136590.3beb971-2) unstable; urgency=medium
 
   * Update debian/watch.
