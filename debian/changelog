@@ -6,6 +6,9 @@ shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
   * Rename binary package to 'shim-unsigned'
   * Add template for signing {mm,fb}$ARCH.efi. (Closes: #922228)
 
+  [ Luca Boccassi ]
+  * Override lintian error about template rules file.
+
  -- Luca Boccassi <bluca@debian.org>  Fri, 15 Feb 2019 19:50:10 +0000
 
 shim (15+1533136590.3beb971-2) unstable; urgency=medium
