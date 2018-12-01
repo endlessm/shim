@@ -48,3 +48,15 @@ Depends: ${misc:Depends},
 Description: boot loader to chain-load signed boot loaders (signing template)
  This package contains template files for shim-helpers-arm64-signed.
  This is only needed for Secure Boot signing.
+
+Package: shim-efi-image
+Architecture: amd64
+Depends: ${misc:Depends}
+Description: boot loader to chain-load signed boot loaders under Secure Boot
+ This package provides a minimalist boot loader which allows verifying
+ signatures of other UEFI binaries against either the Secure Boot DB/DBX or
+ against a built-in signature database.  Its purpose is to allow a small,
+ infrequently-changing binary to be signed by the UEFI CA, while allowing
+ an OS distributor to revision their main bootloader independently of the CA.
+ .
+ This package provides the files that go in the ESP.
