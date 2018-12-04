@@ -10,6 +10,11 @@ ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
 	distributor=ubuntu
 COMMON_OPTIONS ?= ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1
+else ifeq ($(shell dpkg-vendor --is endless && echo yes),yes)
+	cert=debian/endless-uefi-ca.der
+	distributor=endless
+	oslabel="Endless OS"
+COMMON_OPTIONS ?= OSLABEL=$(oslabel) FALLBACK_VERBOSE_WAIT=3000000
 else
 	cert=debian/debian-uefi-ca.der
 	distributor=debian
