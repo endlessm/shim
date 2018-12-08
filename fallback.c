@@ -293,41 +293,25 @@ add_boot_option(EFI_DEVICE_PATH *hddp, EFI_DEVICE_PATH *fulldp,
 }
 
 EFI_STATUS
-find_boot_option(EFI_DEVICE_PATH *dp, EFI_DEVICE_PATH *fulldp,
-                 CHAR16 *filename, CHAR16 *label, CHAR16 *arguments,
-                 UINT16 *optnum)
+remove_duplicates(EFI_DEVICE_PATH *dp, CHAR16 *label, CHAR16 *arguments)
 {
 	unsigned int label_size = StrLen(label)*2 + 2;
-	unsigned int size = sizeof(UINT32) + sizeof (UINT16) +
-		label_size + DevicePathSize(dp) +
+	unsigned int header_size = sizeof(UINT32) + sizeof (UINT16);
+	unsigned int size = header_size + label_size + DevicePathSize(dp) +
 		StrLen(arguments) * 2;
-
-	CHAR8 *data = AllocateZeroPool(size + 2);
-	if (!data)
-		return EFI_OUT_OF_RESOURCES;
-	CHAR8 *cursor = data;
-	*(UINT32 *)cursor = LOAD_OPTION_ACTIVE;
-	cursor += sizeof (UINT32);
-	*(UINT16 *)cursor = DevicePathSize(dp);
-	cursor += sizeof (UINT16);
-	StrCpy((CHAR16 *)cursor, label);
-	cursor += label_size;
-	CopyMem(cursor, dp, DevicePathSize(dp));
-	cursor += DevicePathSize(dp);
-	StrCpy((CHAR16 *)cursor, arguments);
 
 	EFI_STATUS efi_status;
 	EFI_GUID vendor_guid = NullGuid;
+	UINTN rmlist_len = 0;
+	CHAR16 **rmlist = NULL;
 	UINTN buffer_size = 256 * sizeof(CHAR16);
 	CHAR16 *varname = AllocateZeroPool(buffer_size);
 	if (!varname)
 		return EFI_OUT_OF_RESOURCES;
 
 	CHAR8 *candidate = AllocateZeroPool(size);
-	if (!candidate) {
-		FreePool(data);
+	if (!candidate)
 		return EFI_OUT_OF_RESOURCES;
-	}
 
 	while (1) {
 		UINTN varname_size = buffer_size;
@@ -361,6 +345,7 @@ find_boot_option(EFI_DEVICE_PATH *dp, EFI_DEVICE_PATH *fulldp,
 
 			/* EFI_NOT_FOUND means we listed all variables */
 			VerbosePrint(L"Checked all boot entries\n");
+			efi_status = EFI_SUCCESS;
 			break;
 		}
 
@@ -369,35 +354,62 @@ find_boot_option(EFI_DEVICE_PATH *dp, EFI_DEVICE_PATH *fulldp,
 		    !isxdigit(varname[6]) || !isxdigit(varname[7]))
 			continue;
 
+		VerbosePrint(L"Checking %s\n", varname);
+
 		UINTN candidate_size = size;
 		efi_status = gRT->GetVariable(varname, &GV_GUID, NULL,
 					      &candidate_size, candidate);
 		if (EFI_ERROR(efi_status))
 			continue;
 
-		if (candidate_size != size)
+		/* Check that we won't overrun the buffer when comparing */
+		if (candidate_size < header_size + label_size)
 			continue;
 
-		if (CompareMem(candidate, data, size))
+		/* Check if the label matches the one we are looking for */
+		CHAR8 *cursor = candidate + header_size;
+		VerbosePrint(L"%s: \"%s\"\n", varname, cursor);
+		if (CompareMem(cursor, label, label_size))
 			continue;
 
-		VerbosePrint(L"Found boot entry \"%s\" with label \"%s\" "
-			     L"for file \"%s\"\n", varname, label, filename);
+		VerbosePrint(L"Found duplicate boot entry \"%s\" for \"%s\"\n",
+			     varname, label);
 
-		/* at this point, we have duplicate data. */
-		if (!first_new_option) {
-			first_new_option = DuplicateDevicePath(fulldp);
-			first_new_option_args = arguments;
-			first_new_option_size = StrLen(arguments) * sizeof (CHAR16);
-		}
-
-		*optnum = xtoi(varname + 4);
-		FreePool(candidate);
-		FreePool(data);
-		return EFI_SUCCESS;
+		/* add duplicate entry to rmlist */
+		rmlist = ReallocatePool(rmlist, rmlist_len * sizeof(CHAR16 *),
+					(rmlist_len+1) * sizeof(CHAR16 *));
+		if (!rmlist)
+			return EFI_OUT_OF_RESOURCES;
+		rmlist[rmlist_len] = AllocateZeroPool(varname_size);
+		CopyMem(rmlist[rmlist_len], varname, varname_size);
+		rmlist_len++;
 	}
+
+	/* remove all entries in rmlist */
+	while (rmlist_len) {
+		rmlist_len--;
+		VerbosePrint(L"Removing \"%s\"\n", rmlist[rmlist_len]);
+		if (!EFI_ERROR(LibDeleteVariable(rmlist[rmlist_len], &GV_GUID))) {
+			int i, newnbootorder = 0;
+			int bootnum = xtoi(rmlist[rmlist_len] + 4);
+
+			CHAR16 *newbootorder = NULL;
+			newbootorder = AllocateZeroPool(sizeof (CHAR16) * nbootorder);
+			if (!newbootorder)
+				return EFI_OUT_OF_RESOURCES;
+
+			for (i = 0; i < nbootorder; i++)
+				if (bootorder[i] != bootnum)
+					newbootorder[newnbootorder++] = bootorder[i];
+
+			FreePool(bootorder);
+			bootorder = newbootorder;
+			nbootorder = newnbootorder;
+		}
+		FreePool(rmlist[rmlist_len]);
+	}
+
 	FreePool(candidate);
-	FreePool(data);
 	FreePool(varname);
 	return efi_status;
 }
@@ -511,25 +523,8 @@ add_to_boot_list(CHAR16 *dirname, CHAR16 *filename, CHAR16 *label, CHAR16 *argum
 		FreePool(dps);
 	}
 
-	UINT16 option;
-	efi_status = find_boot_option(dp, full_device_path, fullpath, label,
-				      arguments, &option);
-	if (EFI_ERROR(efi_status)) {
-		add_boot_option(dp, full_device_path, fullpath, label,
-				arguments);
-	} else if (option != 0) {
-		CHAR16 *newbootorder;
-		newbootorder = AllocateZeroPool(sizeof (CHAR16) * nbootorder);
-		if (!newbootorder)
-			return EFI_OUT_OF_RESOURCES;
-
-		newbootorder[0] = bootorder[option];
-		CopyMem(newbootorder + 1, bootorder, sizeof (CHAR16) * option);
-		CopyMem(newbootorder + option + 1, bootorder + option + 1,
-			sizeof (CHAR16) * (nbootorder - option - 1));
-		FreePool(bootorder);
-		bootorder = newbootorder;
-	}
+	remove_duplicates(dp, label, arguments);
+	add_boot_option(dp, full_device_path, fullpath, label, arguments);
 
 err:
 	if (full_device_path)
