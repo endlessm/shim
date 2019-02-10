@@ -1,5 +1,6 @@
 shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
 
+  [ Steve Langasek ]
   * Initial Debian upload.  Closes: #820052.
   * Update Standards-Version.
   * Embed the newly-minted Debian CA certificate.
@@ -12,7 +13,11 @@ shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
   * Update Vcs-Bzr.
   * Resync with Ubuntu, including patch to fix debian/copyright.
 
- -- Steve Langasek <vorlon@debian.org>  Sat, 01 Oct 2016 14:18:53 -0700
+  [ Julien Cristau ]
+  * Add some missing copyright holders in d/copyright, update
+    Upstream-Contact.  Thanks to Helen Koike for the help.
+
+ -- Julien Cristau <jcristau@debian.org>  Sat, 15 Oct 2016 15:17:34 +0200
 
 shim (0.9+1474479173.6c180c6-0ubuntu1) UNRELEASED; urgency=medium
 

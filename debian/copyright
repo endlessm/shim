@@ -1,20 +1,56 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: shim
-Upstream-Contact: Matthew Garrett <mjg@redhat.com>
+Upstream-Contact: Matthew Garrett <mjg59@coreos.com>
 Source: https://github.com/mjg59/shim.git
 
 Files: *
-Copyright: 2012 Red Hat, Inc
-	2009-2012 Intel Corporation
+Copyright: 2012-2013 Red Hat, Inc
+	2009-2016 Intel Corporation
 License: BSD-2-Clause
 
 Files: debian/patches/*
 Copyright: 2016 Canonical Ltd.
 License: BSD-2-Clause
 
+Files: crypt_blowfish.*
+Copyright: none
+License: public-domain
+  No copyright is claimed, and the software is hereby placed in the public
+  domain.  In case this attempt to disclaim copyright and place the software
+  in the public domain is deemed null and void, then the software is
+  Copyright (c) 2000-2011 Solar Designer and it is hereby released to the
+  general public under the following terms:
+  .
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted.
+  .
+  There's ABSOLUTELY NO WARRANTY, express or implied.
+
+Files: httpboot.*
+Copyright: 2015 SUSE LINUX GmbH
+License: BSD-2-Clause
+
+Files: include/Http.h
+Copyright: 2016 Intel Corporation
+	2015 Hewlett Packard Enterprise Development LP
+License: BSD-2-Clause
+
+Files: include/PeImage.h
+Copyright: 2006-2010 Intel Corporation
+	2008-2009 Apple Inc
+License: BSD-2-Clause
+
+Files: lib/*.c
+Copyright: 2011-2012 Intel Corporation
+	2012 <James.Bottomley@HansenPartnership.com>
+	2012-2013 Red Hat, Inc
+License: BSD-2-Clause
+
 Files: Cryptlib/OpenSSL/* Cryptlib/Include/openssl/*
 Copyright: 1998-2016 The OpenSSL Project
 	1995-1998 Eric Young (eay@cryptsoft.com)
+	2002 Sun Microsystems, Inc
+	2005 Nokia
 License: OpenSSL and Original-SSLeay
  OpenSSL License
  ---------------
@@ -23,7 +59,7 @@ License: OpenSSL and Original-SSLeay
  are met:
  .
  1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer. 
+    notice, this list of conditions and the following disclaimer.
  .
  2. Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in
@@ -101,7 +137,7 @@ License: OpenSSL and Original-SSLeay
      Eric Young (eay@cryptsoft.com)"
     The word 'cryptographic' can be left out if the rouines from the library
     being used are not cryptographic related :-).
- 4. If you include any Windows specific code (or a derivative thereof) from 
+ 4. If you include any Windows specific code (or a derivative thereof) from
     the apps directory (application code) you must include an acknowledgement:
     "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
  .
@@ -121,6 +157,75 @@ License: OpenSSL and Original-SSLeay
  derivative of this code cannot be changed.  i.e. this code cannot simply be
  copied and put under another distribution licence
  [including the GNU Public Licence.]
+
+Files: Cryptlib/Include/openssl/seed.h
+Copyright: 2007 KISA(Korea Information Security Agency)
+License: BSD-2-Clause
+
+Files: Cryptlib/OpenSSL/crypto/o_dir.h Cryptlib/OpenSSL/crypto/LPdir_nyi.c
+Copyright: 2004, Richard Levitte <richard@levitte.org>
+License: BSD-2-Clause
+
+Files: Cryptlib/OpenSSL/crypto/x509v3/v3_pci.c Cryptlib/OpenSSL/crypto/x509v3/v3_pcia.c
+Copyright: 2004 Kungliga Tekniska Högskolan
+License: BSD-3-Clause-Institute
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+  .
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  .
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+  .
+  3. Neither the name of the Institute nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+  .
+  THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  SUCH DAMAGE.
+
+Files: Cryptlib/OpenSSL/crypto/bn/rsaz_exp.h
+Copyright: 2012, Intel Corporation
+License: BSD-3-Clause-Intel
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ *  Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ .
+ *  Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the
+    distribution.
+ .
+ *  Neither the name of the Intel Corporation nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY INTEL CORPORATION ""AS IS"" AND ANY
+ EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 License: BSD-2-Clause
  Redistribution and use in source and binary forms, with or without
