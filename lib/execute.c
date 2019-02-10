@@ -41,8 +41,7 @@
 #include <efi.h>
 #include <efilib.h>
 
-#include <guid.h>
-#include <execute.h>
+#include "shim.h"
 
 EFI_STATUS
 generate_path(CHAR16* name, EFI_LOADED_IMAGE *li, EFI_DEVICE_PATH **path, CHAR16 **PathName)
@@ -74,7 +73,7 @@ generate_path(CHAR16* name, EFI_LOADED_IMAGE *li, EFI_DEVICE_PATH **path, CHAR16
 	*PathName = AllocatePool((pathlen + 1 + StrLen(name))*sizeof(CHAR16));
 
 	if (!*PathName) {
-		Print(L"Failed to allocate path buffer\n");
+		console_print(L"Failed to allocate path buffer\n");
 		efi_status = EFI_OUT_OF_RESOURCES;
 		goto error;
 	}
@@ -96,32 +95,30 @@ error:
 EFI_STATUS
 execute(EFI_HANDLE image, CHAR16 *name)
 {
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 	EFI_HANDLE h;
 	EFI_LOADED_IMAGE *li;
 	EFI_DEVICE_PATH *devpath;
 	CHAR16 *PathName;
 
-	status = uefi_call_wrapper(BS->HandleProtocol, 3, image,
-				   &IMAGE_PROTOCOL, (void **)&li);
-	if (status != EFI_SUCCESS)
-		return status;
+	efi_status = gBS->HandleProtocol(image, &IMAGE_PROTOCOL,
+					 (void **) &li);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
 
-	
-	status = generate_path(name, li, &devpath, &PathName);
-	if (status != EFI_SUCCESS)
-		return status;
+	efi_status = generate_path(name, li, &devpath, &PathName);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
 
-	status = uefi_call_wrapper(BS->LoadImage, 6, FALSE, image,
-				   devpath, NULL, 0, &h);
-	if (status != EFI_SUCCESS)
+	efi_status = gBS->LoadImage(FALSE, image, devpath, NULL, 0, &h);
+	if (EFI_ERROR(efi_status))
 		goto out;
-	
-	status = uefi_call_wrapper(BS->StartImage, 3, h, NULL, NULL);
-	uefi_call_wrapper(BS->UnloadImage, 1, h);
+
+	efi_status = gBS->StartImage(h, NULL, NULL);
+	gBS->UnloadImage(h);
 
  out:
 	FreePool(PathName);
 	FreePool(devpath);
-	return status;
+	return efi_status;
 }

@@ -8,22 +8,23 @@
 #include <efi.h>
 #include <efilib.h>
 
-#include <shell.h>
+#include "shim.h"
 
 EFI_STATUS
 argsplit(EFI_HANDLE image, int *argc, CHAR16*** ARGV)
 {
 	unsigned int i, count = 1;
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 	EFI_LOADED_IMAGE *info;
 	CHAR16 *start;
 
 	*argc = 0;
 
-	status = uefi_call_wrapper(BS->HandleProtocol, 3, image, &LoadedImageProtocol, (VOID **) &info);
-	if (EFI_ERROR(status)) {
-		Print(L"Failed to get arguments\n");
-		return status;
+	efi_status = gBS->HandleProtocol(image, &LoadedImageProtocol,
+					 (VOID **) &info);
+	if (EFI_ERROR(efi_status)) {
+		console_print(L"Failed to get arguments\n");
+		return efi_status;
 	}
 
 	for (i = 0; i < info->LoadOptionsSize; i += 2) {
@@ -33,7 +34,8 @@ argsplit(EFI_HANDLE image, int *argc, CHAR16*** ARGV)
 		}
 	}
 
-	(*argc)++;		/* we counted spaces, so add one for initial */
+	/* we counted spaces, so add one for initial */
+	(*argc)++;
 
 	*ARGV = AllocatePool(*argc * sizeof(**ARGV));
 	if (!*ARGV) {

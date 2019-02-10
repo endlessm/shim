@@ -3,11 +3,11 @@ Section: admin
 Priority: optional
 Maintainer: Steve Langasek <vorlon@debian.org>
 Standards-Version: 3.9.8
-Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl
-Vcs-Bzr: lp:~ubuntu-core-dev/shim/trunk
+Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev
+Vcs-Git: https://git.launchpad.net/~ubuntu-core-dev/shim/+git/shim
 
 Package: shim
-Architecture: amd64
+Architecture: amd64 arm64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: boot loader to chain-load signed boot loaders under Secure Boot
  This package provides a minimalist boot loader which allows verifying

@@ -1,3 +1,4 @@
-shim*.efi /usr/lib/shim
-mm*.efi.signed /usr/lib/shim
-fb*.efi.signed /usr/lib/shim
+/boot/efi/EFI/*/shim*.efi /usr/lib/shim
+/boot/efi/EFI/*/mm*.efi /usr/lib/shim
+/boot/efi/EFI/*/fb*.efi /usr/lib/shim
+/boot/efi/EFI/*/BOOT*.CSV /usr/lib/shim

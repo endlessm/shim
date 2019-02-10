@@ -2,6 +2,7 @@
 certdb
 shim_cert.h
 *.a
+*.CSV
 *.cer
 *.crl
 *.crt
@@ -24,3 +25,5 @@ shim_cert.h
 *.srl.old
 *.tar.*
 version.c
+cov-int/
+scan-results/

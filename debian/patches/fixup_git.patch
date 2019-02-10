@@ -1,0 +1,19 @@
+From: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
+Subject: We're not in a git tree, don't try to git clean.
+
+---
+ Makefile |    1 -
+ 1 file changed, 1 deletion(-)
+
+Index: b/Makefile
+===================================================================
+--- a/Makefile
++++ b/Makefile
+@@ -225,7 +225,6 @@ clean-shim-objs:
+ 	@rm -rvf $(TARGET) *.o $(SHIM_OBJS) $(MOK_OBJS) $(FALLBACK_OBJS) $(KEYS) certdb $(BOOTCSVNAME)
+ 	@rm -vf *.debug *.so *.efi *.efi.* *.tar.* version.c buildid
+ 	@rm -vf Cryptlib/*.[oa] Cryptlib/*/*.[oa]
+-	@git clean -f -d -e 'Cryptlib/OpenSSL/*'
+ 
+ clean: clean-shim-objs
+ 	$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean

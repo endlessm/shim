@@ -3,9 +3,8 @@
 #include <Library/BaseCryptLib.h>
 #include <openssl/sha.h>
 #include <openssl/md5.h>
-#include <openssl/des.h>
-#include "PasswordCrypt.h"
-#include "crypt_blowfish.h"
+
+#include "shim.h"
 
 #define TRAD_DES_HASH_SIZE 13 /* (64/6+1) + (12/6) */
 #define BSDI_DES_HASH_SIZE 20 /* (64/6+1) + (24/6) + 4 + 1 */
@@ -29,20 +28,6 @@ UINT16 get_hash_size (const UINT16 method)
 	}
 
 	return 0;
-}
-
-static EFI_STATUS trad_des_crypt (const char *key, const char *salt, UINT8 *hash)
-{
-	char result[TRAD_DES_HASH_SIZE + 1];
-	char *ret;
-
-	ret = DES_fcrypt(key, salt, result);
-	if (ret) {
-		CopyMem(hash, result, TRAD_DES_HASH_SIZE);
-		return EFI_SUCCESS;
-	}
-
-	return EFI_UNSUPPORTED;
 }
 
 static const char md5_salt_prefix[] = "$1$";
@@ -301,42 +286,44 @@ static EFI_STATUS blowfish_crypt (const char *key, const char *salt, UINT8 *hash
 EFI_STATUS password_crypt (const char *password, UINT32 pw_length,
 			   const PASSWORD_CRYPT *pw_crypt, UINT8 *hash)
 {
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 
 	if (!pw_crypt)
 		return EFI_INVALID_PARAMETER;
 
 	switch (pw_crypt->method) {
 	case TRADITIONAL_DES:
-		status = trad_des_crypt (password, (char *)pw_crypt->salt, hash);
-		break;
 	case EXTEND_BSDI_DES:
-		status = EFI_UNSUPPORTED;
+		efi_status = EFI_UNSUPPORTED;
 		break;
 	case MD5_BASED:
-		status = md5_crypt (password, pw_length, (char *)pw_crypt->salt,
-				    pw_crypt->salt_size, hash);
+		efi_status = md5_crypt (password, pw_length,
+					(char *)pw_crypt->salt,
+					pw_crypt->salt_size, hash);
 		break;
 	case SHA256_BASED:
-		status = sha256_crypt(password, pw_length, (char *)pw_crypt->salt,
-				      pw_crypt->salt_size, pw_crypt->iter_count,
-				      hash);
+		efi_status = sha256_crypt(password, pw_length,
+					  (char *)pw_crypt->salt,
+					  pw_crypt->salt_size,
+					  pw_crypt->iter_count, hash);
 		break;
 	case SHA512_BASED:
-		status = sha512_crypt(password, pw_length, (char *)pw_crypt->salt,
-				      pw_crypt->salt_size, pw_crypt->iter_count,
-				      hash);
+		efi_status = sha512_crypt(password, pw_length,
+					  (char *)pw_crypt->salt,
+					  pw_crypt->salt_size,
+					  pw_crypt->iter_count, hash);
 		break;
 	case BLOWFISH_BASED:
 		if (pw_crypt->salt_size != (7 + 22 + 1)) {
-			status = EFI_INVALID_PARAMETER;
+			efi_status = EFI_INVALID_PARAMETER;
 			break;
 		}
-		status = blowfish_crypt(password, (char *)pw_crypt->salt, hash);
+		efi_status = blowfish_crypt(password, (char *)pw_crypt->salt,
+					    hash);
 		break;
 	default:
 		return EFI_INVALID_PARAMETER;
 	}
 
-	return status;
+	return efi_status;
 }

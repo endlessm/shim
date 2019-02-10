@@ -6,19 +6,12 @@
  */
 #include <efi.h>
 #include <efilib.h>
+#include <stdarg.h>
+#include <stdbool.h>
 
-#include <console.h>
-#include <variables.h>
-#include <errors.h>
+#include "shim.h"
 
-static EFI_GUID SHIM_LOCK_GUID = { 0x605dab50, 0xe046, 0x4300, {0xab, 0xb6, 0x3d, 0xd8, 0x10, 0xdd, 0x8b, 0x23} };
-
-static int min(int a, int b)
-{
-	if (a < b)
-		return a;
-	return b;
-}
+static UINT8 console_text_mode = 0;
 
 static int
 count_lines(CHAR16 *str_arr[])
@@ -43,16 +36,94 @@ SetMem16(CHAR16 *dst, UINT32 n, CHAR16 c)
 EFI_STATUS
 console_get_keystroke(EFI_INPUT_KEY *key)
 {
+	SIMPLE_INPUT_INTERFACE *ci = ST->ConIn;
 	UINTN EventIndex;
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 
 	do {
-		uefi_call_wrapper(BS->WaitForEvent, 3, 1, &ST->ConIn->WaitForKey, &EventIndex);
-		status = uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, key);
-	} while (status == EFI_NOT_READY);
+		gBS->WaitForEvent(1, &ci->WaitForKey, &EventIndex);
+		efi_status = ci->ReadKeyStroke(ci, key);
+	} while (efi_status == EFI_NOT_READY);
 
-	return status;
+	return efi_status;
 }
+
+static VOID setup_console (int text)
+{
+	EFI_STATUS efi_status;
+	EFI_CONSOLE_CONTROL_PROTOCOL *concon;
+	static EFI_CONSOLE_CONTROL_SCREEN_MODE mode =
+					EfiConsoleControlScreenGraphics;
+	EFI_CONSOLE_CONTROL_SCREEN_MODE new_mode;
+
+	efi_status = LibLocateProtocol(&EFI_CONSOLE_CONTROL_GUID,
+				       (VOID **)&concon);
+	if (EFI_ERROR(efi_status))
+		return;
+
+	if (text) {
+		new_mode = EfiConsoleControlScreenText;
+
+		efi_status = concon->GetMode(concon, &mode, 0, 0);
+		/* If that didn't work, assume it's graphics */
+		if (EFI_ERROR(efi_status))
+			mode = EfiConsoleControlScreenGraphics;
+		if (text < 0) {
+			if (mode == EfiConsoleControlScreenGraphics)
+				console_text_mode = 0;
+			else
+				console_text_mode = 1;
+			return;
+		}
+	} else {
+		new_mode = mode;
+	}
+
+	concon->SetMode(concon, new_mode);
+	console_text_mode = text;
+}
+
+VOID console_fini(VOID)
+{
+	if (console_text_mode)
+		setup_console(0);
+}
+
+UINTN
+console_print(const CHAR16 *fmt, ...)
+{
+	va_list args;
+	UINTN ret;
+
+	if (!console_text_mode)
+		setup_console(1);
+
+	va_start(args, fmt);
+	ret = VPrint(fmt, args);
+	va_end(args);
+
+	return ret;
+}
+
+UINTN
+console_print_at(UINTN col, UINTN row, const CHAR16 *fmt, ...)
+{
+	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
+	va_list args;
+	UINTN ret;
+
+	if (!console_text_mode)
+		setup_console(1);
+
+	co->SetCursorPosition(co, col, row);
+
+	va_start(args, fmt);
+	ret = VPrint(fmt, args);
+	va_end(args);
+
+	return ret;
+}
+
 
 void
 console_print_box_at(CHAR16 *str_arr[], int highlight,
@@ -68,7 +139,10 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 	if (lines == 0)
 		return;
 
-	uefi_call_wrapper(co->QueryMode, 4, co, co->Mode->Mode, &cols, &rows);
+	if (!console_text_mode)
+		setup_console(1);
+
+	co->QueryMode(co, co->Mode->Mode, &cols, &rows);
 
 	/* last row on screen is unusable without scrolling, so ignore it */
 	rows--;
@@ -88,8 +162,8 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 		start_row = 0;
 
 	if (start_col > (int)cols || start_row > (int)rows) {
-		Print(L"Starting Position (%d,%d) is off screen\n",
-		      start_col, start_row);
+		console_print(L"Starting Position (%d,%d) is off screen\n",
+			      start_col, start_row);
 		return;
 	}
 	if (size_cols + start_col > (int)cols)
@@ -102,7 +176,7 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 
 	Line = AllocatePool((size_cols+1)*sizeof(CHAR16));
 	if (!Line) {
-		Print(L"Failed Allocation\n");
+		console_print(L"Failed Allocation\n");
 		return;
 	}
 
@@ -111,8 +185,8 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 	Line[0] = BOXDRAW_DOWN_RIGHT;
 	Line[size_cols - 1] = BOXDRAW_DOWN_LEFT;
 	Line[size_cols] = L'\0';
-	uefi_call_wrapper(co->SetCursorPosition, 3, co, start_col, start_row);
-	uefi_call_wrapper(co->OutputString, 2, co, Line);
+	co->SetCursorPosition(co, start_col, start_row);
+	co->OutputString(co, Line);
 
 	int start;
 	if (offset == 0)
@@ -143,19 +217,21 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 			CopyMem(Line + col + 1, s, min(len, size_cols - 2)*2);
 		}
 		if (line >= 0 && line == highlight)
-			uefi_call_wrapper(co->SetAttribute, 2, co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLACK);
-		uefi_call_wrapper(co->SetCursorPosition, 3, co, start_col, i);
-		uefi_call_wrapper(co->OutputString, 2, co, Line);
+			co->SetAttribute(co, EFI_LIGHTGRAY |
+					       EFI_BACKGROUND_BLACK);
+		co->SetCursorPosition(co, start_col, i);
+		co->OutputString(co, Line);
 		if (line >= 0 && line == highlight)
-			uefi_call_wrapper(co->SetAttribute, 2, co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
+			co->SetAttribute(co, EFI_LIGHTGRAY |
+					       EFI_BACKGROUND_BLUE);
 
 	}
 	SetMem16 (Line, size_cols * 2, BOXDRAW_HORIZONTAL);
 	Line[0] = BOXDRAW_UP_RIGHT;
 	Line[size_cols - 1] = BOXDRAW_UP_LEFT;
 	Line[size_cols] = L'\0';
-	uefi_call_wrapper(co->SetCursorPosition, 3, co, start_col, i);
-	uefi_call_wrapper(co->OutputString, 2, co, Line);
+	co->SetCursorPosition(co, start_col, i);
+	co->OutputString(co, Line);
 
 	FreePool (Line);
 
@@ -168,18 +244,22 @@ console_print_box(CHAR16 *str_arr[], int highlight)
 	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
 	EFI_INPUT_KEY key;
 
+	if (!console_text_mode)
+		setup_console(1);
+
 	CopyMem(&SavedConsoleMode, co->Mode, sizeof(SavedConsoleMode));
-	uefi_call_wrapper(co->EnableCursor, 2, co, FALSE);
-	uefi_call_wrapper(co->SetAttribute, 2, co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
+	co->EnableCursor(co, FALSE);
+	co->SetAttribute(co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
 
 	console_print_box_at(str_arr, highlight, 0, 0, -1, -1, 0,
 			     count_lines(str_arr));
 
 	console_get_keystroke(&key);
 
-	uefi_call_wrapper(co->EnableCursor, 2, co, SavedConsoleMode.CursorVisible);
-	uefi_call_wrapper(co->SetCursorPosition, 3, co, SavedConsoleMode.CursorColumn, SavedConsoleMode.CursorRow);
-	uefi_call_wrapper(co->SetAttribute, 2, co, SavedConsoleMode.Attribute);
+	co->EnableCursor(co, SavedConsoleMode.CursorVisible);
+	co->SetCursorPosition(co, SavedConsoleMode.CursorColumn,
+				SavedConsoleMode.CursorRow);
+	co->SetAttribute(co, SavedConsoleMode.Attribute);
 }
 
 int
@@ -188,7 +268,7 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 	SIMPLE_TEXT_OUTPUT_MODE SavedConsoleMode;
 	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
 	EFI_INPUT_KEY k;
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 	int selector;
 	unsigned int selector_lines = count_lines(selectors);
 	int selector_max_cols = 0;
@@ -197,7 +277,10 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 	unsigned int selector_offset;
 	UINTN cols, rows;
 
-	uefi_call_wrapper(co->QueryMode, 4, co, co->Mode->Mode, &cols, &rows);
+	if (!console_text_mode)
+		setup_console(1);
+
+	co->QueryMode(co, co->Mode->Mode, &cols, &rows);
 
 	for (i = 0; i < selector_lines; i++) {
 		int len = StrLen(selectors[i]);
@@ -206,8 +289,6 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 			selector_max_cols = len;
 	}
 
-	if (start < 0)
-		start = 0;
 	if (start >= selector_lines)
 		start = selector_lines - 1;
 
@@ -234,8 +315,8 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 	}
 
 	CopyMem(&SavedConsoleMode, co->Mode, sizeof(SavedConsoleMode));
-	uefi_call_wrapper(co->EnableCursor, 2, co, FALSE);
-	uefi_call_wrapper(co->SetAttribute, 2, co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
+	co->EnableCursor(co, FALSE);
+	co->SetAttribute(co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
 
 	console_print_box_at(title, -1, 0, 0, -1, -1, 1, count_lines(title));
 
@@ -243,9 +324,10 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 			     size_cols, size_rows, 0, lines);
 
 	do {
-		status = console_get_keystroke(&k);
-		if (EFI_ERROR (status)) {
-			Print(L"Failed to read the keystroke: %r", status);
+		efi_status = console_get_keystroke(&k);
+		if (EFI_ERROR (efi_status)) {
+			console_print(L"Failed to read the keystroke: %r",
+				      efi_status);
 			selector = -1;
 			break;
 		}
@@ -273,9 +355,10 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 	} while (!(k.ScanCode == SCAN_NULL
 		   && k.UnicodeChar == CHAR_CARRIAGE_RETURN));
 
-	uefi_call_wrapper(co->EnableCursor, 2, co, SavedConsoleMode.CursorVisible);
-	uefi_call_wrapper(co->SetCursorPosition, 3, co, SavedConsoleMode.CursorColumn, SavedConsoleMode.CursorRow);
-	uefi_call_wrapper(co->SetAttribute, 2, co, SavedConsoleMode.Attribute);
+	co->EnableCursor(co, SavedConsoleMode.CursorVisible);
+	co->SetCursorPosition(co, SavedConsoleMode.CursorColumn,
+			      SavedConsoleMode.CursorRow);
+	co->SetAttribute(co, SavedConsoleMode.Attribute);
 
 	if (selector < 0)
 		/* ESC pressed */
@@ -287,13 +370,15 @@ console_select(CHAR16 *title[], CHAR16* selectors[], unsigned int start)
 int
 console_yes_no(CHAR16 *str_arr[])
 {
-	return console_select(str_arr, (CHAR16 *[]){ L"No", L"Yes", NULL }, 0);
+	CHAR16 *yes_no[] = { L"No", L"Yes", NULL };
+	return console_select(str_arr, yes_no, 0);
 }
 
 void
 console_alertbox(CHAR16 **title)
 {
-	console_select(title, (CHAR16 *[]){ L"OK", 0 }, 0);
+	CHAR16 *okay[] = { L"OK", NULL };
+	console_select(title, okay, 0);
 }
 
 void
@@ -370,23 +455,22 @@ static struct {
 
 static CHAR16 *
 err_string (
-    IN EFI_STATUS       Status
+    IN EFI_STATUS       efi_status
     )
 {
 	UINTN           Index;
 
 	for (Index = 0; error_table[Index].Desc; Index +=1) {
-		if (error_table[Index].Code == Status) {
+		if (error_table[Index].Code == efi_status) {
 			return error_table[Index].Desc;
 		}
 	}
 
 	return L"";
 }
-	
 
 void
-console_error(CHAR16 *err, EFI_STATUS status)
+console_error(CHAR16 *err, EFI_STATUS efi_status)
 {
 	CHAR16 **err_arr = (CHAR16 *[]){
 		L"ERROR",
@@ -396,7 +480,8 @@ console_error(CHAR16 *err, EFI_STATUS status)
 	};
 	CHAR16 str[512];
 
-	SPrint(str, sizeof(str), L"%s: (%d) %s", err, status, err_string(status));
+	SPrint(str, sizeof(str), L"%s: (0x%x) %s", err, efi_status,
+	       err_string(efi_status));
 
 	err_arr[2] = str;
 
@@ -408,54 +493,69 @@ console_reset(void)
 {
 	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
 
-	uefi_call_wrapper(co->Reset, 2, co, TRUE);
+	if (!console_text_mode)
+		setup_console(1);
+
+	co->Reset(co, TRUE);
 	/* set mode 0 - required to be 80x25 */
-	uefi_call_wrapper(co->SetMode, 2, co, 0);
-	uefi_call_wrapper(co->ClearScreen, 1, co);
+	co->SetMode(co, 0);
+	co->ClearScreen(co);
 }
 
-UINT8 verbose;
+UINT32 verbose = 0;
 
 VOID
 setup_verbosity(VOID)
 {
-	EFI_STATUS status;
-	EFI_GUID guid = SHIM_LOCK_GUID;
-	UINT8 verbose_check;
+	EFI_STATUS efi_status;
+	UINT8 *verbose_check_ptr = NULL;
 	UINTN verbose_check_size;
 
-	verbose_check_size = 1;
-	status = get_variable(L"SHIM_VERBOSE", (void *)&verbose_check,
-				  &verbose_check_size, guid);
-	verbose = 0;
-	if (!EFI_ERROR(status))
-		verbose = verbose_check;
-}
-
-VOID setup_console (int text)
-{
-	EFI_STATUS status;
-	EFI_GUID console_control_guid = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
-	EFI_CONSOLE_CONTROL_PROTOCOL *concon;
-	static EFI_CONSOLE_CONTROL_SCREEN_MODE mode =
-					EfiConsoleControlScreenGraphics;
-	EFI_CONSOLE_CONTROL_SCREEN_MODE new_mode;
-
-	status = LibLocateProtocol(&console_control_guid, (VOID **)&concon);
-	if (status != EFI_SUCCESS)
-		return;
-
-	if (text) {
-		new_mode = EfiConsoleControlScreenText;
-
-		status = uefi_call_wrapper(concon->GetMode, 4, concon, &mode,
-						0, 0);
-		/* If that didn't work, assume it's graphics */
-		if (status != EFI_SUCCESS)
-			mode = EfiConsoleControlScreenGraphics;
-	} else {
-		new_mode = mode;
+	verbose_check_size = sizeof(verbose);
+	efi_status = get_variable(L"SHIM_VERBOSE", &verbose_check_ptr,
+				  &verbose_check_size, SHIM_LOCK_GUID);
+	if (!EFI_ERROR(efi_status)) {
+		verbose = *(__typeof__(verbose) *)verbose_check_ptr;
+		verbose &= (1ULL << (8 * verbose_check_size)) - 1ULL;
+		FreePool(verbose_check_ptr);
 	}
 
-	uefi_call_wrapper(concon->SetMode, 2, concon, new_mode);
+	setup_console(-1);
 }
+
+/* Included here because they mess up the definition of va_list and friends */
+#include <Library/BaseCryptLib.h>
+#include <openssl/err.h>
+#include <openssl/crypto.h>
+
+static int
+print_errors_cb(const char *str, size_t len, void *u)
+{
+	console_print(L"%a", str);
+
+	return len;
+}
+
+EFI_STATUS
+print_crypto_errors(EFI_STATUS efi_status,
+		    char *file, const char *func, int line)
+{
+	if (!(verbose && EFI_ERROR(efi_status)))
+		return efi_status;
+
+	console_print(L"SSL Error: %a:%d %a(): %r\n", file, line, func,
+		      efi_status);
+	ERR_print_errors_cb(print_errors_cb, NULL);
+
+	return efi_status;
+}
+
+VOID
+msleep(unsigned long msecs)
+{
+	gBS->Stall(msecs);
+}
+
+/* This is used in various things to determine if we should print to the
+ * console */
+UINT8 in_protocol = 0;

@@ -1,3 +1,33 @@
+shim (15+1533136590.3beb971-1) unstable; urgency=medium
+
+  * New upstream release.
+    - debian/patches/second-stage-path: dropped; the default loader path now
+      includes an arch suffix.
+    - debian/patches/sbsigntool-no-pesign: dropped; no longer needed.
+  * Drop remaining patches that were not being applied.
+  * Sync packaging from Ubuntu:
+    - debian/copyright: Update upstream source location.
+    - debian/control: add a Build-Depends on libelf-dev.
+    - Enable arm64 build.
+    - debian/patches/fixup_git.patch: don't run git in clean; we're not
+      really in a git tree.
+    - debian/rules, debian/shim.install: use the upstream install target as
+      intended, and move files to the target directory using dh_install.
+    - define RELEASE and COMMIT_ID for the snapshot.
+    - Set ENABLE_HTTPBOOT to enable the HTTP Boot feature.
+    - Update dh_auto_build/dh_auto_clean/dh_auto_install for new upstream
+      options: set MAKELEVEL.
+    - Define an EFI_ARCH variable, and use that for paths to shim. This
+      makes it possible to build a shim for other architectures than amd64.
+    - Set EFIDIR=$distro for dh_auto_install; that will let files be installed
+      in the "right" final directories, and makes boot.csv for us.
+    - Set ENABLE_SHIM_CERT, to keep using ephemeral self-signed certs built
+      at compile-time for MokManager and fallback.
+    - Set ENABLE_SBSIGN, to use sbsign instead of pesign for signing fallback
+      and MokManager.
+
+ -- Steve Langasek <vorlon@debian.org>  Sat, 09 Feb 2019 07:23:19 +0000
+
 shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
 
   [ Steve Langasek ]

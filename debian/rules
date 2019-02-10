@@ -6,16 +6,42 @@
 # should be building the other binaries also.
 ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
+	distributor=ubuntu
 else
 	cert=debian/debian-uefi-ca.der
+	distributor=debian
 endif
+
+ifeq ($(DEB_HOST_ARCH),amd64)
+export EFI_ARCH := x64
+else ($(DEB_HOST_ARCH),arm64)
+export EFI_ARCH := aa64
+endif
+
+COMMON_OPTIONS = \
+	RELEASE=15 \
+	COMMIT_ID=3beb971b10659cf78144ddc5eeea83501384440c \
+	MAKELEVEL=0 \
+	EFI_PATH=/usr/lib \
+	ENABLE_HTTPBOOT=true \
+	ENABLE_SHIM_CERT=1 \
+	ENABLE_SBSIGN=1 \
+	VENDOR_CERT_FILE=$(cert) \
+	EFIDIR=$(distributor) \
+	$(NULL)
 
 %:
 	dh $@ --parallel
 
+override_dh_auto_clean:
+	dh_auto_clean -- MAKELEVEL=0
+
 override_dh_auto_build:
-	dh_auto_build -- EFI_PATH=/usr/lib VENDOR_CERT_FILE=$(cert)
+	dh_auto_build -- $(COMMON_OPTIONS)
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
 
 override_dh_fixperms:
 	dh_fixperms
-	chmod a-x debian/shim/usr/lib/shim/shimx64.efi
+	chmod a-x debian/shim/usr/lib/shim/shim$(EFI_ARCH).efi

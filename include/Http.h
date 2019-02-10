@@ -19,18 +19,8 @@
 
 **/
 
-#ifndef __EFI_HTTP_PROTOCOL_H__
-#define __EFI_HTTP_PROTOCOL_H__
-
-#define EFI_HTTP_SERVICE_BINDING_PROTOCOL_GUID \
-  { \
-    0xbdc8e6af, 0xd9bc, 0x4379, {0xa7, 0x2a, 0xe0, 0xc4, 0xe7, 0x5d, 0xae, 0x1c } \
-  }
-
-#define EFI_HTTP_PROTOCOL_GUID \
-  { \
-    0x7a59b29b, 0x910b, 0x4171, {0x82, 0x42, 0xa8, 0x5a, 0x0d, 0xf2, 0x5b, 0x5b } \
-  }
+#ifndef SHIM_HTTP_H
+#define SHIM_HTTP_H
 
 typedef struct _EFI_HTTP_PROTOCOL EFI_HTTP_PROTOCOL;
 
@@ -514,4 +504,4 @@ struct _EFI_HTTP_PROTOCOL {
   EFI_HTTP_POLL                 Poll;
 };
 
-#endif
+#endif /* SHIM_HTTP_H */

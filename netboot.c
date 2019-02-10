@@ -33,12 +33,9 @@
  * Corporation.
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include <string.h>
 #include "shim.h"
-#include "netboot.h"
-#include "str.h"
+
+#include <string.h>
 
 #define ntohs(x) __builtin_bswap16(x)	/* supported both by GCC and clang */
 #define htons(x) ntohs(x)
@@ -61,11 +58,11 @@ typedef struct {
  */
 BOOLEAN findNetboot(EFI_HANDLE device)
 {
-	EFI_STATUS status;
+	EFI_STATUS efi_status;
 
-	status = uefi_call_wrapper(BS->HandleProtocol, 3, device,
-				   &PxeBaseCodeProtocol, (VOID **)&pxe);
-	if (status != EFI_SUCCESS) {
+	efi_status = gBS->HandleProtocol(device, &PxeBaseCodeProtocol,
+					 (VOID **) &pxe);
+	if (EFI_ERROR(efi_status)) {
 		pxe = NULL;
 		return FALSE;
 	}
@@ -198,12 +195,12 @@ static BOOLEAN extract_tftp_info(CHAR8 *url)
 	memset(ip6inv, 0, sizeof(ip6inv));
 
 	if (strncmp((UINT8 *)url, (UINT8 *)"tftp://", 7)) {
-		Print(L"URLS MUST START WITH tftp://\n");
+		console_print(L"URLS MUST START WITH tftp://\n");
 		return FALSE;
 	}
 	start = url + 7;
 	if (*start != '[') {
-		Print(L"TFTP SERVER MUST BE ENCLOSED IN [..]\n");
+		console_print(L"TFTP SERVER MUST BE ENCLOSED IN [..]\n");
 		return FALSE;
 	}
 
@@ -212,12 +209,12 @@ static BOOLEAN extract_tftp_info(CHAR8 *url)
 	while ((*end != '\0') && (*end != ']')) {
 		end++;
 		if (end - start >= (int)sizeof(ip6str)) {
-			Print(L"TFTP URL includes malformed IPv6 address\n");
+			console_print(L"TFTP URL includes malformed IPv6 address\n");
 			return FALSE;
 		}
 	}
 	if (*end == '\0') {
-		Print(L"TFTP SERVER MUST BE ENCLOSED IN [..]\n");
+		console_print(L"TFTP SERVER MUST BE ENCLOSED IN [..]\n");
 		return FALSE;
 	}
 	memset(ip6str, 0, sizeof(ip6str));
@@ -259,10 +256,20 @@ static EFI_STATUS parseDhcp4()
 {
 	CHAR8 *template = (CHAR8 *)translate_slashes(DEFAULT_LOADER_CHAR);
 	INTN template_len = strlen(template) + 1;
+	EFI_PXE_BASE_CODE_DHCPV4_PACKET* pkt_v4 = (EFI_PXE_BASE_CODE_DHCPV4_PACKET *)&pxe->Mode->DhcpAck.Dhcpv4;
 
-	INTN dir_len = strnlena(pxe->Mode->DhcpAck.Dhcpv4.BootpBootFile, 127);
+	if(pxe->Mode->ProxyOfferReceived) {
+		/*
+		 * Proxy should not have precedence.  Check if DhcpAck
+		 * contained boot info.
+		 */
+		if(pxe->Mode->DhcpAck.Dhcpv4.BootpBootFile[0] == '\0')
+			pkt_v4 = &pxe->Mode->ProxyOffer.Dhcpv4;
+	}
+
+	INTN dir_len = strnlena(pkt_v4->BootpBootFile, 127);
 	INTN i;
-	UINT8 *dir = pxe->Mode->DhcpAck.Dhcpv4.BootpBootFile;
+	UINT8 *dir = pkt_v4->BootpBootFile;
 
 	for (i = dir_len; i >= 0; i--) {
 		if (dir[i] == '/')
@@ -283,7 +290,7 @@ static EFI_STATUS parseDhcp4()
 	if (dir_len == 0 && dir[0] != '/' && template[0] == '/')
 		template++;
 	strcata(full_path, template);
-	memcpy(&tftp_addr.v4, pxe->Mode->DhcpAck.Dhcpv4.BootpSiAddr, 4);
+	memcpy(&tftp_addr.v4, pkt_v4->BootpSiAddr, 4);
 
 	return EFI_SUCCESS;
 }
@@ -291,7 +298,7 @@ static EFI_STATUS parseDhcp4()
 EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle)
 {
 
-	EFI_STATUS rc;
+	EFI_STATUS efi_status;
 
 	if (!pxe)
 		return EFI_NOT_READY;
@@ -303,33 +310,32 @@ EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle)
 	 * if its ipv4 or ipv6
 	 */
 	if (pxe->Mode->UsingIpv6){
-		rc = parseDhcp6();
+		efi_status = parseDhcp6();
 	} else
-		rc = parseDhcp4();
-	return rc;
+		efi_status = parseDhcp4();
+	return efi_status;
 }
 
 EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle, VOID **buffer, UINT64 *bufsiz)
 {
-	EFI_STATUS rc;
+	EFI_STATUS efi_status;
 	EFI_PXE_BASE_CODE_TFTP_OPCODE read = EFI_PXE_BASE_CODE_TFTP_READ_FILE;
 	BOOLEAN overwrite = FALSE;
 	BOOLEAN nobuffer = FALSE;
 	UINTN blksz = 512;
 
-	Print(L"Fetching Netboot Image\n");
+	console_print(L"Fetching Netboot Image\n");
 	if (*buffer == NULL) {
 		*buffer = AllocatePool(4096 * 1024);
 		if (!*buffer)
-			return EFI_OUT_OF_RESOURCES; 
+			return EFI_OUT_OF_RESOURCES;
 		*bufsiz = 4096 * 1024;
 	}
 
 try_again:
-	rc = uefi_call_wrapper(pxe->Mtftp, 10, pxe, read, *buffer, overwrite,
-				bufsiz, &blksz, &tftp_addr, full_path, NULL, nobuffer);
-
-	if (rc == EFI_BUFFER_TOO_SMALL) {
+	efi_status = pxe->Mtftp(pxe, read, *buffer, overwrite, bufsiz, &blksz,
+			      &tftp_addr, full_path, NULL, nobuffer);
+	if (efi_status == EFI_BUFFER_TOO_SMALL) {
 		/* try again, doubling buf size */
 		*bufsiz *= 2;
 		FreePool(*buffer);
@@ -339,8 +345,8 @@ try_again:
 		goto try_again;
 	}
 
-	if (rc != EFI_SUCCESS && *buffer) {
+	if (EFI_ERROR(efi_status) && *buffer) {
 		FreePool(*buffer);
 	}
-	return rc;
+	return efi_status;
 }

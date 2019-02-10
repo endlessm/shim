@@ -25,6 +25,16 @@ SECTIONS
    *(.reloc)
   }
   . = ALIGN(4096);
+  .note.gnu.build-id : {
+    *(.note.gnu.build-id)
+  }
+
+  . = ALIGN(4096);
+  .data.ident : {
+    *(.data.ident)
+  }
+
+  . = ALIGN(4096);
   .data :
   {
    _data = .;
@@ -42,7 +52,7 @@ SECTIONS
    *(COMMON)
    *(.rel.local)
   }
-  .note.gnu.build-id : { *(.note.gnu.build-id) }
+
   . = ALIGN(4096);
   .vendor_cert :
   {
@@ -54,8 +64,8 @@ SECTIONS
   .rela :
   {
     *(.rela.data*)
-    *(.rela.got)
-    *(.rela.stab)
+    *(.rela.got*)
+    *(.rela.stab*)
   }
   _edata = .;
   _data_size = . - _data;
