@@ -1,4 +1,4 @@
-shim (15+1533136590.3beb971-2) UNRELEASED; urgency=medium
+shim (15+1533136590.3beb971-2) unstable; urgency=medium
 
   * Update debian/watch.
   * Update VCS to point to salsa.
@@ -8,7 +8,7 @@ shim (15+1533136590.3beb971-2) UNRELEASED; urgency=medium
   * Update Standards-Version.
   * Update debian/copyright (drop reference to file no longer in source)
 
- -- Steve Langasek <vorlon@debian.org>  Sun, 10 Feb 2019 00:15:19 -0800
+ -- Steve Langasek <vorlon@debian.org>  Mon, 11 Feb 2019 05:18:18 +0000
 
 shim (15+1533136590.3beb971-1) unstable; urgency=medium
 
