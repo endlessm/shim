@@ -1,6 +1,7 @@
 shim (15+1533136590.3beb971-2) UNRELEASED; urgency=medium
 
   * Update debian/watch.
+  * Update VCS to point to salsa.
 
  -- Steve Langasek <vorlon@debian.org>  Sun, 10 Feb 2019 00:15:19 -0800
 
