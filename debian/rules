@@ -14,7 +14,8 @@ endif
 
 ifeq ($(DEB_HOST_ARCH),amd64)
 export EFI_ARCH := x64
-else ($(DEB_HOST_ARCH),arm64)
+endif
+ifeq ($(DEB_HOST_ARCH),arm64)
 export EFI_ARCH := aa64
 endif
 
