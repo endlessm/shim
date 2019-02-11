@@ -18,6 +18,9 @@ endif
 ifeq ($(DEB_HOST_ARCH),arm64)
 export EFI_ARCH := aa64
 endif
+ifeq ($(DEB_HOST_ARCH),i386)
+export EFI_ARCH := ia32
+endif
 
 COMMON_OPTIONS = \
 	RELEASE=15 \
