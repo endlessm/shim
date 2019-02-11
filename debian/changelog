@@ -6,6 +6,7 @@ shim (15+1533136590.3beb971-2) UNRELEASED; urgency=medium
   * Enable build for i386.
   * Ensure DEB_HOST_ARCH is set even if not present in the environment.
   * Update Standards-Version.
+  * Update debian/copyright (drop reference to file no longer in source)
 
  -- Steve Langasek <vorlon@debian.org>  Sun, 10 Feb 2019 00:15:19 -0800
 

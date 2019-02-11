@@ -162,7 +162,7 @@ Files: Cryptlib/Include/openssl/seed.h
 Copyright: 2007 KISA(Korea Information Security Agency)
 License: BSD-2-Clause
 
-Files: Cryptlib/OpenSSL/crypto/o_dir.h Cryptlib/OpenSSL/crypto/LPdir_nyi.c
+Files: Cryptlib/OpenSSL/crypto/LPdir_nyi.c
 Copyright: 2004, Richard Levitte <richard@levitte.org>
 License: BSD-2-Clause
 
