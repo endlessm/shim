@@ -12,6 +12,8 @@ else
 	distributor=debian
 endif
 
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
 ifeq ($(DEB_HOST_ARCH),amd64)
 export EFI_ARCH := x64
 endif
