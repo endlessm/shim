@@ -9,6 +9,8 @@ shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
   [ Luca Boccassi ]
   * Override lintian error about template rules file.
   * Include /usr/share/dpkg/architecture.mk instead of shelling out.
+  * Add uname.patch to avoid embedding the kernel architecture in the
+    binary and to use a fixed string instead.
 
  -- Luca Boccassi <bluca@debian.org>  Fri, 15 Feb 2019 19:50:10 +0000
 
