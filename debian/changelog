@@ -12,6 +12,10 @@ shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
   * Add uname.patch to avoid embedding the kernel architecture in the
     binary and to use a fixed string instead.
 
+  [ Steve McIntyre ]
+  * Change maintenance address to be the EFI team
+  * Add me and vorlon to the Uploaders list
+
  -- Luca Boccassi <bluca@debian.org>  Fri, 15 Feb 2019 19:50:10 +0000
 
 shim (15+1533136590.3beb971-2) unstable; urgency=medium
