@@ -20,23 +20,23 @@ Description: boot loader to chain-load signed boot loaders under Secure Boot
  infrequently-changing binary to be signed by the UEFI CA, while allowing
  an OS distributor to revision their main bootloader independently of the CA.
 
-Package: shim-amd64-signed-template
+Package: shim-helpers-amd64-signed-template
 Architecture: amd64
 Depends: ${misc:Depends},
 Description: boot loader to chain-load signed boot loaders (signing template)
- This package contains template files for shim-amd64-signed.
+ This package contains template files for shim-helpers-amd64-signed.
  This is only needed for Secure Boot signing.
 
-Package: shim-i386-signed-template
+Package: shim-helpers-i386-signed-template
 Architecture: i386
 Depends: ${misc:Depends},
 Description: boot loader to chain-load signed boot loaders (signing template)
- This package contains template files for shim-i386-signed.
+ This package contains template files for shim-helpers-i386-signed.
  This is only needed for Secure Boot signing.
 
-Package: shim-arm64-signed-template
+Package: shim-helpers-arm64-signed-template
 Architecture: arm64
 Depends: ${misc:Depends},
 Description: boot loader to chain-load signed boot loaders (signing template)
- This package contains template files for shim-arm64-signed.
+ This package contains template files for shim-helpers-arm64-signed.
  This is only needed for Secure Boot signing.
