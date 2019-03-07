@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Comment:
- This file describes only the shim-signed source package.
+ This file describes only the shim-helpers-signed-* source package.
 
 Files: debian/signatures/*
 License: public-domain

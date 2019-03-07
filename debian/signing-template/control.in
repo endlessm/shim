@@ -1,14 +1,14 @@
-Source: shim-@arch@-signed
+Source: shim-helpers-@arch@-signed
 Section: admin
 Priority: optional
-Maintainer: Steve Langasek <vorlon@debian.org>
-Standards-Version: 3.9.8
+Maintainer: Debian EFI team <efi-team@lists.debian.org>
+Standards-Version: 4.3.0
 Build-Depends: debhelper (>= 10.1~),
  sbsigntool [amd64 arm64 i386],
  shim-unsigned (= @version_binary@),
 Rules-Requires-Root: no
 
-Package: shim-@arch@-signed
+Package: shim-helpers-@arch@-signed
 Architecture: @arch@
 Conflicts: shim (<< 15+1533136590.3beb971-3~),
 Replaces: shim (<< 15+1533136590.3beb971-3~),

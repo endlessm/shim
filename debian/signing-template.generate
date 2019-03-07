@@ -20,7 +20,7 @@ subst () {
 }
 
 template='./debian/signing-template'
-pkg_name="shim-${DEB_HOST_ARCH}-signed-template"
+pkg_name="shim-helpers-${DEB_HOST_ARCH}-signed-template"
 pkg_dir="debian/${pkg_name}/usr/share/code-signing/${pkg_name}"
 pkg_deb="${pkg_dir}/source-template/debian"
 
