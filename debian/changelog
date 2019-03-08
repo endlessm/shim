@@ -16,8 +16,12 @@ shim (15+1533136590.3beb971-3) UNRELEASED; urgency=medium
   * Change maintenance address to be the EFI team
   * Add me and vorlon to the Uploaders list
   * Rename the helper binary packages to shim-helpers-$arch.
+  * Update the signing-template JSON metadata to match new practice:
+    + Move all the data under a new top-level "packages" key
+    + Add an empty "trusted_certs" key - the helper binaries do not do any
+      further verification with an embedded key.
 
- -- Steve McIntyre <93sam@debian.org>  Wed, 06 Mar 2019 22:35:52 +0000
+ -- Steve McIntyre <93sam@debian.org>  Fri, 08 Mar 2019 21:59:43 +0000
 
 shim (15+1533136590.3beb971-2) unstable; urgency=medium
 

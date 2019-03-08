@@ -1,6 +1,11 @@
-{"shim-unsigned": {
-	"files": [
-		{"sig_type": "efi", "file": "usr/lib/shim/fb@efi@.efi"},
-		{"sig_type": "efi", "file": "usr/lib/shim/mm@efi@.efi"}
-	]
-}}
+{
+  "packages": {
+    "shim-unsigned": {
+      "trusted_certs": [],
+      "files": [
+        {"sig_type": "efi", "file": "usr/lib/shim/fb@efi@.efi"},
+        {"sig_type": "efi", "file": "usr/lib/shim/mm@efi@.efi"}
+      ]
+    }
+  }
+}
