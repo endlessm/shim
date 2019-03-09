@@ -1,3 +1,12 @@
+shim (15+1533136590.3beb971-4) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * No-change sourceful upload to get rebuilds (and hence build logs) from
+    the buildds. Hoping to get this version signed by Microsoft, so let's
+    make our setup as clean as possible.
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 09 Mar 2019 22:24:23 +0000
+
 shim (15+1533136590.3beb971-3) unstable; urgency=medium
 
   [ Philipp Hahn ]
