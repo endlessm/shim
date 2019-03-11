@@ -1,7 +1,7 @@
 Source: shim-helpers-@arch@-signed
 Section: admin
 Priority: optional
-Maintainer: Debian EFI team <efi-team@lists.debian.org>
+Maintainer: Debian EFI team <debian-efi@lists.debian.org>
 Standards-Version: 4.3.0
 Build-Depends: debhelper (>= 10.1~),
  sbsigntool [amd64 arm64 i386],
