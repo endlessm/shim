@@ -6,7 +6,6 @@ Standards-Version: 4.3.0
 Build-Depends: debhelper (>= 10.1~),
  sbsigntool [amd64 arm64 i386],
  shim-unsigned (= @version_binary@),
-Rules-Requires-Root: no
 
 Package: shim-helpers-@arch@-signed
 Architecture: @arch@
