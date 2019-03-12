@@ -1,4 +1,4 @@
-shim (15+1533136590.3beb971-5) UNRELEASED; urgency=medium
+shim (15+1533136590.3beb971-5) unstable; urgency=medium
 
   [ Ansgar Burchardt ]
   * Correct maintainer address in signing template
@@ -8,7 +8,7 @@ shim (15+1533136590.3beb971-5) UNRELEASED; urgency=medium
     things owned by root. There might be better ways to do this, but this
     will do for now.
 
- -- Steve McIntyre <93sam@debian.org>  Sat, 09 Mar 2019 22:24:23 +0000
+ -- Steve McIntyre <93sam@debian.org>  Tue, 12 Mar 2019 01:38:19 +0000
 
 shim (15+1533136590.3beb971-4) unstable; urgency=medium
 
