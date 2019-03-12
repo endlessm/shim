@@ -1,3 +1,10 @@
+shim (15+1533136590.3beb971-5) UNRELEASED; urgency=medium
+
+  [ Ansgar Burchardt ]
+  * Correct maintainer address in signing template
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 09 Mar 2019 22:24:23 +0000
+
 shim (15+1533136590.3beb971-4) unstable; urgency=medium
 
   [ Steve McIntyre ]
