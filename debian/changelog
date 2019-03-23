@@ -1,3 +1,12 @@
+shim (15+1533136590.3beb971-6) UNRELEASED; urgency=medium
+
+  [ Steve McIntyre ]
+  * Add Provides: and Breaks: to shim-helpers-$arch-signed to fix
+    clashes with the old shim-signed package for fbx64.efi.signed and
+    mmx64.efi.signed. Closes: #924619
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 23 Mar 2019 18:19:13 +0000
+
 shim (15+1533136590.3beb971-5) unstable; urgency=medium
 
   [ Ansgar Burchardt ]
