@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+include /usr/share/dpkg/architecture.mk
+
 # Other vendors, add your certs here.  No sense in using
 # dpkg-vendor --derives-from, because only Canonical-generated binaries will
 # be signed with this key; so if you are building your own shim binary you
@@ -33,6 +35,7 @@ COMMON_OPTIONS += \
 	ENABLE_HTTPBOOT=true \
 	VENDOR_CERT_FILE=$(cert) \
 	EFIDIR=$(distributor) \
+	CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
 	$(NULL)
 
 %:
