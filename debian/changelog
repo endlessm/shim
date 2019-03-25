@@ -1,3 +1,9 @@
+shim (15+1533136590.3beb971-7) UNRELEASED; urgency=medium
+
+  * debian/control: Update Vcs-* fields
+
+ -- Ansgar Burchardt <ansgar@debian.org>  Tue, 12 Mar 2019 21:22:28 +0100
+
 shim (15+1533136590.3beb971-6) unstable; urgency=medium
 
   [ Steve McIntyre ]
