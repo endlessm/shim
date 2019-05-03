@@ -5,6 +5,8 @@ shim (15+1533136590.3beb971-7) UNRELEASED; urgency=medium
     + VLogError(): Avoid NULL pointer dereferences in (V)Sprint calls
     + Fix OBJ_create() to tolerate a NULL sn and ln
   * Update VCS-* fields in debian/control
+  * Build using gcc-7 to get better control of reproducibility during the
+    lifetime of Buster.
 
  -- Steve McIntyre <93sam@debian.org>  Fri, 03 May 2019 01:39:34 +0100
 

@@ -36,6 +36,7 @@ COMMON_OPTIONS += \
 	VENDOR_CERT_FILE=$(cert) \
 	EFIDIR=$(distributor) \
 	CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
+	CC=$(DEB_HOST_GNU_TYPE)-gcc-7 \
 	$(NULL)
 
 %:
