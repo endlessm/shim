@@ -1,2 +1,3 @@
 fixup_git.patch
 uname.patch
+avoid_null_vsprint.patch
