@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian EFI team <debian-efi@lists.debian.org>
 Uploaders: Steve Langasek <vorlon@debian.org>, Steve McIntyre <93sam@debian.org>
 Standards-Version: 4.3.0
-Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, gcc-7, pesign
+Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev, gcc-7, pesign (>= 0.112-5)
 Vcs-Browser: https://salsa.debian.org/efi-team/shim
 Vcs-Git: https://salsa.debian.org/efi-team/shim.git
 

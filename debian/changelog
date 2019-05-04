@@ -7,6 +7,10 @@ shim (15+1533136590.3beb971-7) UNRELEASED; urgency=medium
   * Update VCS-* fields in debian/control
   * Build using gcc-7 to get better control of reproducibility during the
     lifetime of Buster.
+  * Build in a dbx list to blacklist binaries that we know to not be
+    secure. Build-depend on a new (bug-fixed) version of pesign to
+    generate that list at build time, using a list of known bad hashes.
+  * Initial list of known bad hashes is just my personal test binary.
 
  -- Steve McIntyre <93sam@debian.org>  Fri, 03 May 2019 01:39:34 +0100
 
