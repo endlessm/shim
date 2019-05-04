@@ -15,6 +15,9 @@ else
 	distributor=debian
 endif
 
+export DBX_LIST = dbx.esl
+export DBX_HASHES = debian/$(distributor)-dbx.hashes
+
 include /usr/share/dpkg/architecture.mk
 
 ifeq ($(DEB_HOST_ARCH),amd64)
@@ -34,18 +37,29 @@ COMMON_OPTIONS += \
 	EFI_PATH=/usr/lib \
 	ENABLE_HTTPBOOT=true \
 	VENDOR_CERT_FILE=$(cert) \
+	VENDOR_DBX_FILE=$(DBX_LIST) \
 	EFIDIR=$(distributor) \
 	CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
 	CC=$(DEB_HOST_GNU_TYPE)-gcc-7 \
 	$(NULL)
+
+$(DBX_LIST):
+	if [ -f ${DBX_HASHES} ]; then \
+	    for HASH in $$(grep -E [[:xdigit:]]{32} ${DBX_HASHES}); do \
+                efisiglist -o ${DBX_LIST} -a -h $$HASH; \
+            done; \
+        else \
+            touch ${DBX_LIST}; \
+        fi
 
 %:
 	dh $@ --parallel
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
+	rm -f $(DBX_LIST)
 
-override_dh_auto_build:
+override_dh_auto_build: $(DBX_LIST)
 	dh_auto_build -- $(COMMON_OPTIONS)
 
 override_dh_auto_install:
