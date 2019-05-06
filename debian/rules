@@ -47,10 +47,10 @@ $(DBX_LIST):
 	if [ -f ${DBX_HASHES} ]; then \
 	    set -e; \
 	    for HASH in $$(grep -E [[:xdigit:]]{32} ${DBX_HASHES}); do \
-                efisiglist -o ${DBX_LIST} -a -h $$HASH; \
+                efisiglist -o $@ -a -h $$HASH; \
             done; \
         else \
-            touch ${DBX_LIST}; \
+            touch $@; \
         fi
 
 %:
