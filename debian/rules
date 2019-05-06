@@ -45,6 +45,7 @@ COMMON_OPTIONS += \
 
 $(DBX_LIST):
 	if [ -f ${DBX_HASHES} ]; then \
+	    set -e; \
 	    for HASH in $$(grep -E [[:xdigit:]]{32} ${DBX_HASHES}); do \
                 efisiglist -o ${DBX_LIST} -a -h $$HASH; \
             done; \
