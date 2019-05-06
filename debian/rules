@@ -43,15 +43,14 @@ COMMON_OPTIONS += \
 	CC=$(DEB_HOST_GNU_TYPE)-gcc-7 \
 	$(NULL)
 
-$(DBX_LIST):
-	if [ -f ${DBX_HASHES} ]; then \
-	    set -e; \
-	    for HASH in $$(grep -E [[:xdigit:]]{32} ${DBX_HASHES}); do \
-                efisiglist -o $@ -a -h $$HASH; \
-            done; \
-        else \
-            touch $@; \
-        fi
+$(DBX_LIST): $(DBX_HASHES)
+	rm -f $@
+	set -e; \
+	for HASH in $$(grep -E [[:xdigit:]]{32} $<); do \
+            efisiglist -o $@ -a -h $$HASH; \
+        done
+	# Support an empty $(DBX_HASHES)
+	touch $@
 
 %:
 	dh $@ --parallel
