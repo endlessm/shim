@@ -15,8 +15,8 @@ else
 	distributor=debian
 endif
 
-export DBX_LIST = dbx.esl
-export DBX_HASHES = debian/$(distributor)-dbx.hashes
+DBX_LIST = dbx.esl
+DBX_HASHES = debian/$(distributor)-dbx.hashes
 
 include /usr/share/dpkg/architecture.mk
 
