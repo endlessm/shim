@@ -1,0 +1,36 @@
+# debian-dbx.hashes
+#
+# This file contains the sha256 sums of the binaries that we want to
+# blacklist directly in our signed shim. Add entries below, with comments
+# to explain each entry (where possible).
+#
+# Format of this file: put hex-encoded sha256 checksums on lines on
+# their own. I'm using shell-style comments just for clarity.
+#
+# The hashes are generated using:
+#
+#     pesign --hash -in <binary>
+#
+# on *either* the signed or unsigned binary, pesign doesn't care
+# which.
+
+# Sledge's test arm64 grub binary
+d0555468007c31bd75c1f1c984e5b4adbb464bc68e5dedd670535ee97acc7dd9
+
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+16_arm64.deb
+# (allows use of the devicetree command in secure mode)
+# grubaa64.efi.signed
+1c88f32ebd6ecd1a84d83940f78b0d69168a4ff57a1f57fd070e7307899bbc99
+# grubnetaa64.efi.signed
+7f5074f42eb92f183fa8748c92992bae8b23a963bc9f8b85692ee7116dc3dcb0
+# gcdaa64.efi.signed
+d9e95ad9ea0e0df522f7f41ef9fd9cb5e65cfb0c285465aabd077023e6edb6ba
+
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+17_arm64.deb
+# (allows use of the devicetree command in secure mode)
+# grubaa64.efi.signed
+77fb2b05450520eecdbbfa3070fb26405d151b576cd6dffc8cab6a2f0bcff10c
+# grubnetaa64.efi.signed
+d70b41ea19ea19836198252ac90b1b6fca40ad6baa3911b4a27e886e6423426a
+# gcdaa64.efi.signed
+44f20309d8b0f661da2c3cf225ba9c0f7b8a2d6ff3885ecba710e5907870ee24
