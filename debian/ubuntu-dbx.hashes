@@ -1,0 +1,17 @@
+# ubuntu-dbx.hashes
+#
+# This file contains the sha256 sums of the binaries that we want to
+# blacklist directly in our signed shim. Add entries below, with comments
+# to explain each entry (where possible).
+#
+# Format of this file: put hex-encoded sha256 checksums on lines on
+# their own. I'm using shell-style comments just for clarity.
+#
+# The hashes are generated using:
+#
+#     pesign --hash -in <binary>
+#
+# on *either* the signed or unsigned binary, pesign doesn't care
+# which.
+
+# ... This file intentionally left blank for now ...
