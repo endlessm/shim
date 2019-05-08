@@ -14,9 +14,6 @@
 # on *either* the signed or unsigned binary, pesign doesn't care
 # which.
 
-# Sledge's test arm64 grub binary
-d0555468007c31bd75c1f1c984e5b4adbb464bc68e5dedd670535ee97acc7dd9
-
 # Files from grub-efi-arm64-signed_1+2.02+dfsg1+16_arm64.deb
 # (allows use of the devicetree command in secure mode)
 # grubaa64.efi.signed
