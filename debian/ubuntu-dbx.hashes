@@ -9,7 +9,7 @@
 #
 # The hashes are generated using:
 #
-#     pesign --hash -in <binary>
+#     pesign --hash --padding -in <binary>
 #
 # on *either* the signed or unsigned binary, pesign doesn't care
 # which.

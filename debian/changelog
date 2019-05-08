@@ -1,3 +1,13 @@
+shim (15+1533136590.3beb971-8) UNRELEASED; urgency=medium
+
+  [ Steve McIntyre ]
+  * Use --padding when calling pesign to generate hashes for the dbx
+    list, as recommended by Peter Jones. No actual changes needed in
+    our list of hashes at this point - they work out the same either
+    way.
+
+ -- Steve McIntyre <93sam@debian.org>  Wed, 08 May 2019 02:05:01 +0100
+
 shim (15+1533136590.3beb971-7) unstable; urgency=medium
 
   [ Ansgar Burchardt ]
