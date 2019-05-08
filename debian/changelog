@@ -1,4 +1,4 @@
-shim (15+1533136590.3beb971-7) UNRELEASED; urgency=medium
+shim (15+1533136590.3beb971-7) unstable; urgency=medium
 
   [ Ansgar Burchardt ]
   * debian/control: Update Vcs-* fields
@@ -14,7 +14,7 @@ shim (15+1533136590.3beb971-7) UNRELEASED; urgency=medium
     generate that list at build time, using a list of known bad hashes.
   * Initial list of known bad hashes is just my personal test binary.
 
- -- Steve McIntyre <93sam@debian.org>  Fri, 03 May 2019 01:39:34 +0100
+ -- Steve McIntyre <93sam@debian.org>  Wed, 08 May 2019 02:05:01 +0100
 
 shim (15+1533136590.3beb971-6) unstable; urgency=medium
 
