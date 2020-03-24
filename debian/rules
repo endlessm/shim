@@ -54,7 +54,7 @@ $(DBX_LIST): $(DBX_HASHES)
 	touch $@
 
 %:
-	dh $@ --parallel
+	dh $@
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
