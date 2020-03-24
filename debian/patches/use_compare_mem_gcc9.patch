@@ -1,0 +1,51 @@
+Taken changes from commit aaa09b35e73c4a35fc119d225e5241199d7cf5aa,
+tweaked to fit into our older codebase
+diff --git a/MokManager.c b/MokManager.c
+index 01697bd..aaf6cb1 100644
+--- a/MokManager.c	2020-03-24 17:13:03.250000678 +0000
++++ b/MokManager.c	2020-03-24 17:15:08.586705154 +0000
+@@ -1077,7 +1077,7 @@
+ 			continue;
+ 
+ 		DataSize += sizeof(EFI_SIGNATURE_LIST);
+-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0)
++		if (CompareMem(&(list[i].Type), &X509_GUID, sizeof(EFI_GUID)) == 0)
+ 			DataSize += sizeof(EFI_GUID);
+ 		DataSize += list[i].MokSize;
+ 	}
+@@ -1099,7 +1099,7 @@
+ 		CertList->SignatureType = list[i].Type;
+ 		CertList->SignatureHeaderSize = 0;
+ 
+-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0) {
++		if (CompareMem(&(list[i].Type), &X509_GUID, sizeof(EFI_GUID)) == 0) {
+ 			CertList->SignatureListSize = list[i].MokSize +
+ 			    sizeof(EFI_SIGNATURE_LIST) + sizeof(EFI_GUID);
+ 			CertList->SignatureSize =
+@@ -1140,7 +1140,7 @@
+ 	int i;
+ 
+ 	for (i = 0; i < mok_num; i++) {
+-		if (CompareGuid(&(mok[i].Type), &X509_GUID) != 0)
++		if (CompareMem(&(mok[i].Type), &X509_GUID, sizeof(EFI_GUID)) != 0)
+ 			continue;
+ 
+ 		if (mok[i].MokSize == key_size &&
+@@ -1191,7 +1191,7 @@
+ 	sig_size = hash_size + sizeof(EFI_GUID);
+ 
+ 	for (i = 0; i < mok_num; i++) {
+-		if ((CompareGuid(&(mok[i].Type), &Type) != 0) ||
++		if ((CompareMem(&(mok[i].Type), &Type, sizeof(EFI_GUID)) != 0) ||
+ 		    (mok[i].MokSize < sig_size))
+ 			continue;
+ 
+@@ -1355,7 +1355,7 @@
+ 
+ 	/* Search and destroy */
+ 	for (i = 0; i < del_num; i++) {
+-		if (CompareGuid(&(del_key[i].Type), &X509_GUID) == 0) {
++		if (CompareMem(&(del_key[i].Type), &X509_GUID, sizeof(EFI_GUID)) == 0) {
+ 			delete_cert(del_key[i].Mok, del_key[i].MokSize,
+ 				    mok, mok_num);
+ 		} else if (is_sha2_hash(del_key[i].Type)) {

@@ -5,8 +5,10 @@ shim (15+1533136590.3beb971-8) UNRELEASED; urgency=medium
     list, as recommended by Peter Jones. No actual changes needed in
     our list of hashes at this point - they work out the same either
     way.
+  * Switch to using gcc-9 for builds, tweaking a patch from upstream
+    to fix a FTBFS. Closes: #925816
 
- -- Steve McIntyre <93sam@debian.org>  Wed, 08 May 2019 02:05:01 +0100
+ -- Steve McIntyre <93sam@debian.org>  Tue, 24 Mar 2020 16:51:10 +0000
 
 shim (15+1533136590.3beb971-7) unstable; urgency=medium
 
