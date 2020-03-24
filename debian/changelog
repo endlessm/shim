@@ -1,4 +1,4 @@
-shim (15+1533136590.3beb971-8) UNRELEASED; urgency=medium
+shim (15+1533136590.3beb971-8) unstable; urgency=medium
 
   [ Steve McIntyre ]
   * Use --padding when calling pesign to generate hashes for the dbx
