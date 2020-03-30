@@ -12,7 +12,7 @@ Architecture: @arch@
 Conflicts: shim (<< 15+1533136590.3beb971-3~),
 Replaces: shim (<< 15+1533136590.3beb971-3~), shim-signed (<< 1.29),
 Breaks: shim-signed (<< 1.29),
-Depends: shim-unsigned (= @version_binary@), ${misc:Depends},
+Depends: shim-unsigned (>= @version_binary@), ${misc:Depends},
 Built-Using: shim (= @version_binary@)
 Description: boot loader to chain-load signed boot loaders (signed by Debian)
  This package provides a minimalist boot loader which allows verifying

@@ -1,3 +1,15 @@
+shim (15+1533136590.3beb971-9) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+
+  * In the -helpers-ARCH-signed packages, change the version
+    dependency on shim-unsigned to be >= and not =. This will allow
+    for installation to still work in the window while we wait for the
+    template package to do its second trip through the
+    archive. Closes: #955356
+
+ -- Steve McIntyre <93sam@debian.org>  Mon, 30 Mar 2020 15:19:08 +0100
+
 shim (15+1533136590.3beb971-8) unstable; urgency=medium
 
   [ Steve McIntyre ]
