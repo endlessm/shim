@@ -5,6 +5,7 @@ shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
   * debian/copyright: use spaces rather than tabs to start continuation
     lines.
   * Bump debhelper from old 11 to 12.
+  * Set debhelper-compat version in Build-Depends.
 
  -- Debian Janitor <janitor@jelmer.uk>  Wed, 01 Apr 2020 06:38:02 +0000
 
