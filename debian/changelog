@@ -1,6 +1,7 @@
 shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
 
   * Trim trailing whitespace.
+  * Use secure copyright file specification URI.
 
  -- Debian Janitor <janitor@jelmer.uk>  Wed, 01 Apr 2020 06:38:02 +0000
 
