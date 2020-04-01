@@ -1,3 +1,9 @@
+shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
+
+  * Trim trailing whitespace.
+
+ -- Debian Janitor <janitor@jelmer.uk>  Wed, 01 Apr 2020 06:38:02 +0000
+
 shim (15+1533136590.3beb971-9) unstable; urgency=medium
 
   [ Steve McIntyre ]
@@ -166,7 +172,7 @@ shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
 shim (0.9+1474479173.6c180c6-0ubuntu1) UNRELEASED; urgency=medium
 
   [ Helen Koike ]
-  * debian/copyright: add OpenSSL license 
+  * debian/copyright: add OpenSSL license
 
   [ Mathieu Trudel-Lapierre ]
   * New upstream release.
@@ -191,7 +197,7 @@ shim (0.9+1465500757.14a5905-0ubuntu1) yakkety; urgency=medium
   * Refreshed patches.
     - Remaining patches:
       + second-stage-path
-      + sbsigntool-not-pesign 
+      + sbsigntool-not-pesign
   * debian/patches/unused-variable: remove unused variable size.
   * debian/patches/binutils-version-matching: revert d9a4c912 to correctly
     match objcopy's version on Ubuntu.
