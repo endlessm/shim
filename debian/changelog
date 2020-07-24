@@ -1,5 +1,6 @@
 shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
 
+  [ Debian Janitor ]
   * Trim trailing whitespace.
   * Use secure copyright file specification URI.
   * debian/copyright: use spaces rather than tabs to start continuation
@@ -9,12 +10,14 @@ shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
   * Set upstream metadata fields: Bug-Database, Bug-Submit.
   * Update standards version to 4.4.1, no changes needed.
 
- -- Debian Janitor <janitor@jelmer.uk>  Wed, 01 Apr 2020 06:38:02 +0000
+  [ Steve McIntyre ]
+  * Trivial changes to generating the inbuilt dbx if we're using it.
+
+ -- Steve McIntyre <93sam@debian.org>  Fri, 24 Jul 2020 01:22:46 +0100
 
 shim (15+1533136590.3beb971-9) unstable; urgency=medium
 
   [ Steve McIntyre ]
-
   * In the -helpers-ARCH-signed packages, change the version
     dependency on shim-unsigned to be >= and not =. This will allow
     for installation to still work in the window while we wait for the
