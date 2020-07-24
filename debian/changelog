@@ -1,4 +1,4 @@
-shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
+shim (15+1533136590.3beb971-10) unstable; urgency=medium
 
   [ Debian Janitor ]
   * Trim trailing whitespace.
@@ -12,6 +12,7 @@ shim (15+1533136590.3beb971-10) UNRELEASED; urgency=medium
 
   [ Steve McIntyre ]
   * Trivial changes to generating the inbuilt dbx if we're using it.
+  * Upload to pick up rotated Debian signing keys
 
  -- Steve McIntyre <93sam@debian.org>  Fri, 24 Jul 2020 01:22:46 +0100
 
