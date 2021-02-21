@@ -65,4 +65,10 @@ override_dh_auto_build: $(DBX_LIST)
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
+	# Remove the copy of the source that's installed - we have git
+	# already...
+	rm -rf debian/tmp/usr
+	# And remove the extra removable-media copy of shim too, it's
+	# not needed for our build and causes debhelper to complain
+	rm -f debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
 	./debian/signing-template.generate
