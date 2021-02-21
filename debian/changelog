@@ -1,7 +1,7 @@
 shim (15+1613861442.888f5b5-1) unstable; urgency=medium
 
   [ Steve McIntyre ]
-  * Switch to much-newer upstream code point with many many fixes
+  * Switch to much-newer upstream code point with many fixes
     + Particularly pulling in SBAT changes for better revocation support
     + Remove all our old patches, no longer needed:
       - avoid_null_vsprint.patch
