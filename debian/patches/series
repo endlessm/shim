@@ -1,5 +1,0 @@
-fixup_git.patch
-uname.patch
-avoid_null_vsprint.patch
-check_null_sn_ln.patch
-use_compare_mem_gcc9.patch

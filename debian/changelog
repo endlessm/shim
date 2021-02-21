@@ -3,6 +3,12 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
   [ Steve McIntyre ]
   * Switch to much-newer upstream code point with many many fixes
     + Particularly pulling in SBAT changes for better revocation support
+    + Remove all our old patches, no longer needed:
+      - avoid_null_vsprint.patch
+      - check_null_sn_ln.patch
+      - fixup_git.patch
+      - uname.patch
+      - use_compare_mem_gcc9.patch
   * Switch to using gcc-10 rather than gcc-9. Closes: #978521
 
  -- Steve McIntyre <93sam@debian.org>  Sun, 21 Feb 2021 13:50:16 +0100
