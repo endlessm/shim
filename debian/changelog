@@ -10,7 +10,11 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
       - uname.patch
       - use_compare_mem_gcc9.patch
   * New patches:
-    + Trivial change to remove bashisms in Make.coverity
+    + fix-Make.coverity-bashisms.patch
+      (Trivial changes to remove bashisms in Make.coverity)
+    + cast-CHAR8-string-handling.patch
+      (Cast CHAR8 strings to use (const char *) when using string
+       functions)
   * Switch to using gcc-10 rather than gcc-9. Closes: #978521
 
  -- Steve McIntyre <93sam@debian.org>  Sun, 21 Feb 2021 13:50:16 +0100
