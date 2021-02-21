@@ -58,7 +58,13 @@ SECTIONS
     *(.vendor_cert)
   }
   . = ALIGN(4096);
-
+  .sbat :
+  {
+    _sbat = .;
+    *(.sbat)
+    *(.sbat.*)
+    _esbat = .;
+  }
   . = ALIGN(4096);
   .rela :
   {

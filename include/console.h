@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #ifndef SHIM_CONSOLE_H
 #define SHIM_CONSOLE_H
 
@@ -6,6 +8,12 @@
 
 #define PrintAt(fmt, ...) \
 	({"Do not directly call PrintAt() use console_print_at() instead" = 1;});
+
+#if !defined(EFI_WARN_UNKNOWN_GLYPH) && defined(EFI_WARN_UNKOWN_GLYPH)
+#define EFI_WARN_UNKNOWN_GLYPH EFI_WARN_UNKOWN_GLYPH
+#elif !defined(EFI_WARN_UNKNOWN_GLYPH)
+#define EFI_WARN_UNKNOWN_GLYPH EFIWARN(1)
+#endif
 
 EFI_STATUS
 console_get_keystroke(EFI_INPUT_KEY *key);
@@ -33,7 +41,15 @@ console_alertbox(CHAR16 **title);
 void
 console_notify(CHAR16 *string);
 void
+console_save_and_set_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode);
+void
+console_restore_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode);
+int
+console_countdown(CHAR16* title, const CHAR16* message, int timeout);
+void
 console_reset(void);
+void
+console_mode_handle(void);
 #define NOSEL 0x7fffffff
 
 typedef struct _EFI_CONSOLE_CONTROL_PROTOCOL   EFI_CONSOLE_CONTROL_PROTOCOL;
@@ -76,12 +92,19 @@ struct _EFI_CONSOLE_CONTROL_PROTOCOL {
 extern VOID console_fini(VOID);
 extern VOID setup_verbosity(VOID);
 extern UINT32 verbose;
-#define dprint(fmt, ...) ({							\
+#define dprint_(fmt, ...) ({							\
 		UINTN __dprint_ret = 0;						\
 		if (verbose)							\
 			__dprint_ret = console_print((fmt), ##__VA_ARGS__);	\
 		__dprint_ret;							\
 	})
+#define dprint(fmt, ...)                                              \
+	dprint_(L"%a:%d:%a() " fmt, __FILE__, __LINE__ - 1, __func__, \
+	        ##__VA_ARGS__)
+extern EFI_STATUS
+vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func, va_list args);
+#define vdprint(fmt, ...) \
+	vdprint_(fmt, __FILE__, __LINE__ - 1, __func__, ##__VA_ARGS__)
 
 extern EFI_STATUS print_crypto_errors(EFI_STATUS rc, char *file, const char *func, int line);
 #define crypterr(rc) print_crypto_errors((rc), __FILE__, __func__, __LINE__)

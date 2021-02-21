@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #ifndef SHIM_H_
 #define SHIM_H_
 
@@ -29,8 +31,9 @@
 #undef uefi_call_wrapper
 
 #include <stddef.h>
+#include <stdint.h>
 
-#define min(a, b) ({(a) < (b) ? (a) : (b);})
+#define nonnull(...) __attribute__((__nonnull__(__VA_ARGS__)))
 
 #ifdef __x86_64__
 #ifndef DEFAULT_LOADER
@@ -95,6 +98,31 @@
 #define FALLBACK L"\\fb" EFI_ARCH L".efi"
 #define MOK_MANAGER L"\\mm" EFI_ARCH L".efi"
 
+#if defined(VENDOR_DB_FILE)
+# define vendor_authorized vendor_db
+# define vendor_authorized_size vendor_db_size
+# define vendor_authorized_category VENDOR_ADDEND_DB
+#elif defined(VENDOR_CERT_FILE)
+# define vendor_authorized vendor_cert
+# define vendor_authorized_size vendor_cert_size
+# define vendor_authorized_category VENDOR_ADDEND_X509
+#else
+# define vendor_authorized vendor_null
+# define vendor_authorized_size vendor_null_size
+# define vendor_authorized_category VENDOR_ADDEND_NONE
+#endif
+
+#if defined(VENDOR_DBX_FILE)
+# define vendor_deauthorized vendor_dbx
+# define vendor_deauthorized_size vendor_dbx_size
+#else
+# define vendor_deauthorized vendor_deauthorized_null
+# define vendor_deauthorized_size vendor_deauthorized_null_size
+#endif
+
+#include "include/asm.h"
+#include "include/compiler.h"
+#include "include/list.h"
 #include "include/configtable.h"
 #include "include/console.h"
 #include "include/crypt_blowfish.h"
@@ -102,14 +130,16 @@
 #include "include/errors.h"
 #include "include/execute.h"
 #include "include/guid.h"
-#include "include/Http.h"
+#include "include/http.h"
 #include "include/httpboot.h"
-#include "include/Ip4Config2.h"
-#include "include/Ip6Config.h"
+#include "include/ip4config2.h"
+#include "include/ip6config.h"
 #include "include/netboot.h"
-#include "include/PasswordCrypt.h"
-#include "include/PeImage.h"
+#include "include/passwordcrypt.h"
+#include "include/peimage.h"
+#include "include/pe.h"
 #include "include/replacements.h"
+#include "include/sbat.h"
 #if defined(OVERRIDE_SECURITY_POLICY)
 #include "include/security_policy.h"
 #endif
@@ -118,11 +148,9 @@
 #include "include/tpm.h"
 #include "include/ucs2.h"
 #include "include/variables.h"
+#include "include/sbat.h"
 
 #include "version.h"
-#ifdef ENABLE_SHIM_CERT
-#include "shim_cert.h"
-#endif
 
 INTERFACE_DECL(_SHIM_LOCK);
 
@@ -159,21 +187,37 @@ typedef struct _SHIM_LOCK {
 
 extern EFI_STATUS shim_init(void);
 extern void shim_fini(void);
-extern EFI_STATUS LogError_(const char *file, int line, const char *func, CHAR16 *fmt, ...);
-extern EFI_STATUS VLogError(const char *file, int line, const char *func, CHAR16 *fmt, va_list args);
+extern EFI_STATUS LogError_(const char *file, int line, const char *func, const CHAR16 *fmt, ...);
+extern EFI_STATUS VLogError(const char *file, int line, const char *func, const CHAR16 *fmt, va_list args);
+extern VOID LogHexdump_(const char *file, int line, const char *func, const void *data, size_t sz);
 extern VOID PrintErrors(VOID);
 extern VOID ClearErrors(VOID);
 extern EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath);
 extern EFI_STATUS import_mok_state(EFI_HANDLE image_handle);
 
-extern UINT32 vendor_cert_size;
-extern UINT32 vendor_dbx_size;
-extern UINT8 *vendor_cert;
-extern UINT8 *vendor_dbx;
+extern UINT32 vendor_authorized_size;
+extern UINT8 *vendor_authorized;
+
+extern UINT32 vendor_deauthorized_size;
+extern UINT8 *vendor_deauthorized;
+
+#if defined(ENABLE_SHIM_CERT)
+extern UINT32 build_cert_size;
+extern UINT8 *build_cert;
+#endif /* defined(ENABLE_SHIM_CERT) */
 
 extern UINT8 user_insecure_mode;
 extern UINT8 ignore_db;
 extern UINT8 in_protocol;
+extern void *load_options;
+extern UINT32 load_options_size;
+
+BOOLEAN secure_mode (void);
+
+EFI_STATUS
+verify_buffer (char *data, int datasize,
+	       PE_COFF_LOADER_IMAGE_CONTEXT *context,
+	       UINT8 *sha256hash, UINT8 *sha1hash);
 
 #define perror_(file, line, func, fmt, ...) ({					\
 		UINTN __perror_ret = 0;						\
@@ -182,7 +226,9 @@ extern UINT8 in_protocol;
 		LogError_(file, line, func, fmt, ##__VA_ARGS__);		\
 		__perror_ret;							\
 	})
-#define perror(fmt, ...) perror_(__FILE__, __LINE__, __func__, fmt, ## __VA_ARGS__)
-#define LogError(fmt, ...) LogError_(__FILE__, __LINE__, __func__, fmt, ## __VA_ARGS__)
+#define perror(fmt, ...) \
+	perror_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
+#define LogError(fmt, ...) \
+	LogError_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
 
 #endif /* SHIM_H_ */

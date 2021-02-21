@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #ifndef SHIM_TPM_H
 #define SHIM_TPM_H
 
@@ -10,8 +12,9 @@ EFI_STATUS tpm_log_event(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 pcr,
 			 const CHAR8 *description);
 EFI_STATUS fallback_should_prefer_reset(void);
 
-EFI_STATUS tpm_log_pe(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 *sha1hash,
-		      UINT8 pcr);
+EFI_STATUS tpm_log_pe(EFI_PHYSICAL_ADDRESS buf, UINTN size,
+		      EFI_PHYSICAL_ADDRESS addr, EFI_DEVICE_PATH *path,
+		      UINT8 *sha1hash, UINT8 pcr);
 
 EFI_STATUS tpm_measure_variable(CHAR16 *dbname, EFI_GUID guid, UINTN size, void *data);
 
@@ -44,7 +47,7 @@ typedef struct _EFI_IMAGE_LOAD_EVENT {
   UINTN ImageLengthInMemory;
   UINTN ImageLinkTimeAddress;
   UINTN LengthOfDevicePath;
-  EFI_DEVICE_PATH DevicePath[1];
+  EFI_DEVICE_PATH DevicePath[0];
 } EFI_IMAGE_LOAD_EVENT;
 
 struct efi_tpm_protocol

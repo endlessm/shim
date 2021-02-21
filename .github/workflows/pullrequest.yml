@@ -1,0 +1,68 @@
+name: pull-request-builds
+
+on:
+  pull_request:
+    branches:
+      - main
+      - sbat
+
+jobs:
+  pull-request-intel:
+    runs-on: ubuntu-20.04
+    container: vathpela/efi-ci:f34-x64
+    name: ${{ matrix.distro }} ${{ matrix.efiarch }} build
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            efiarch: x64
+            makearch: x86_64
+            distro: efi-ci-f34
+            libdir: /usr/lib64
+          - arch: amd64
+            efiarch: x64
+            makearch: x86_64
+            distro: efi-ci-f33
+            libdir: /usr/lib64
+          - arch: amd64
+            efiarch: x64
+            makearch: x86_64
+            distro: efi-ci-f32
+            libdir: /usr/lib64
+          - arch: amd64
+            efiarch: ia32
+            makearch: ia32
+            distro: efi-ci-f34
+            libdir: /usr/lib
+          - arch: amd64
+            efiarch: ia32
+            makearch: ia32
+            distro: efi-ci-f33
+            libdir: /usr/lib
+          - arch: amd64
+            efiarch: ia32
+            makearch: ia32
+            distro: efi-ci-f32
+            libdir: /usr/lib
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # otherwise we are testing target branch instead of the PR branch (see pull_request_target trigger)
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Do the build on ${{ matrix.distro }} for ${{ matrix.efiarch }}
+        id: build
+        run: |
+          make -s ARCH=${{ matrix.makearch }} PREFIX=/usr LIBDIR=${{ matrix.libdir }} DESTDIR=/destdir EFIDIR=test ENABLE_SHIM_HASH=true clean all
+          make -s ARCH=${{ matrix.makearch }} PREFIX=/usr LIBDIR=${{ matrix.libdir }} DESTDIR=/destdir EFIDIR=test ENABLE_SHIM_HASH=true install
+          echo 'results:'
+          find /destdir -type f
+#      - name: Archive production artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: shim
+#          path: |
+#            /destdir

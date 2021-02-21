@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #include <efi.h>
 #include <efilib.h>
 #include <string.h>
@@ -70,41 +72,6 @@ static BOOLEAN tpm2_present(EFI_TCG2_BOOT_SERVICE_CAPABILITY *caps,
 	return FALSE;
 }
 
-static inline EFI_TCG2_EVENT_LOG_BITMAP
-tpm2_get_supported_logs(efi_tpm2_protocol_t *tpm,
-			EFI_TCG2_BOOT_SERVICE_CAPABILITY *caps,
-			BOOLEAN old_caps)
-{
-	if (old_caps)
-		return ((TREE_BOOT_SERVICE_CAPABILITY *)caps)->SupportedEventLogs;
-
-	return caps->SupportedEventLogs;
-}
-
-/*
- * According to TCG EFI Protocol Specification for TPM 2.0 family,
- * all events generated after the invocation of EFI_TCG2_GET_EVENT_LOG
- * shall be stored in an instance of an EFI_CONFIGURATION_TABLE aka
- * EFI TCG 2.0 final events table. Hence, it is necessary to trigger the
- * internal switch through calling get_event_log() in order to allow
- * to retrieve the logs from OS runtime.
- */
-static EFI_STATUS trigger_tcg2_final_events_table(efi_tpm2_protocol_t *tpm2,
-						  EFI_TCG2_EVENT_LOG_BITMAP supported_logs)
-{
-	EFI_TCG2_EVENT_LOG_FORMAT log_fmt;
-	EFI_PHYSICAL_ADDRESS start;
-	EFI_PHYSICAL_ADDRESS end;
-	BOOLEAN truncated;
-
-	if (supported_logs & EFI_TCG2_EVENT_LOG_FORMAT_TCG_2)
-		log_fmt = EFI_TCG2_EVENT_LOG_FORMAT_TCG_2;
-	else
-		log_fmt = EFI_TCG2_EVENT_LOG_FORMAT_TCG_1_2;
-
-	return tpm2->get_event_log(tpm2, log_fmt, &start, &end, &truncated);
-}
-
 static EFI_STATUS tpm_locate_protocol(efi_tpm_protocol_t **tpm,
 				      efi_tpm2_protocol_t **tpm2,
 				      BOOLEAN *old_caps_p,
@@ -166,19 +133,10 @@ static EFI_STATUS tpm_log_event_raw(EFI_PHYSICAL_ADDRESS buf, UINTN size,
 #endif
 	} else if (tpm2) {
 		EFI_TCG2_EVENT *event;
-		EFI_TCG2_EVENT_LOG_BITMAP supported_logs;
+		UINTN event_size = sizeof(*event) - sizeof(event->Event) +
+			logsize;
 
-		supported_logs = tpm2_get_supported_logs(tpm2, &caps, old_caps);
-
-		efi_status = trigger_tcg2_final_events_table(tpm2,
-							     supported_logs);
-		if (EFI_ERROR(efi_status)) {
-			perror(L"Unable to trigger tcg2 final events table: %r\n",
-			       efi_status);
-			return efi_status;
-		}
-
-		event = AllocatePool(sizeof(*event) + logsize);
+		event = AllocatePool(event_size);
 		if (!event) {
 			perror(L"Unable to allocate event structure\n");
 			return EFI_OUT_OF_RESOURCES;
@@ -188,7 +146,7 @@ static EFI_STATUS tpm_log_event_raw(EFI_PHYSICAL_ADDRESS buf, UINTN size,
 		event->Header.HeaderVersion = 1;
 		event->Header.PCRIndex = pcr;
 		event->Header.EventType = type;
-		event->Size = sizeof(*event) - sizeof(event->Event) + logsize + 1;
+		event->Size = event_size;
 		CopyMem(event->Event, (VOID *)log, logsize);
 		if (hash) {
 			/* TPM 2 systems will generate the appropriate hash
@@ -254,21 +212,39 @@ EFI_STATUS tpm_log_event(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 pcr,
 				 strlen(description) + 1, 0xd, NULL);
 }
 
-EFI_STATUS tpm_log_pe(EFI_PHYSICAL_ADDRESS buf, UINTN size, UINT8 *sha1hash,
-		      UINT8 pcr)
+EFI_STATUS tpm_log_pe(EFI_PHYSICAL_ADDRESS buf, UINTN size,
+		      EFI_PHYSICAL_ADDRESS addr, EFI_DEVICE_PATH *path,
+		      UINT8 *sha1hash, UINT8 pcr)
 {
-	EFI_IMAGE_LOAD_EVENT ImageLoad;
+	EFI_IMAGE_LOAD_EVENT *ImageLoad = NULL;
+	EFI_STATUS efi_status;
+	UINTN path_size = 0;
 
-	// All of this is informational and forces us to do more parsing before
-	// we can generate it, so let's just leave it out for now
-	ImageLoad.ImageLocationInMemory = 0;
-	ImageLoad.ImageLengthInMemory = 0;
-	ImageLoad.ImageLinkTimeAddress = 0;
-	ImageLoad.LengthOfDevicePath = 0;
+	if (path)
+		path_size = DevicePathSize(path);
 
-	return tpm_log_event_raw(buf, size, pcr, (CHAR8 *)&ImageLoad,
-				 sizeof(ImageLoad),
-				 EV_EFI_BOOT_SERVICES_APPLICATION, sha1hash);
+	ImageLoad = AllocateZeroPool(sizeof(*ImageLoad) + path_size);
+	if (!ImageLoad) {
+		perror(L"Unable to allocate image load event structure\n");
+		return EFI_OUT_OF_RESOURCES;
+	}
+
+	ImageLoad->ImageLocationInMemory = buf;
+	ImageLoad->ImageLengthInMemory = size;
+	ImageLoad->ImageLinkTimeAddress = addr;
+
+	if (path_size > 0) {
+		CopyMem(ImageLoad->DevicePath, path, path_size);
+		ImageLoad->LengthOfDevicePath = path_size;
+	}
+
+	efi_status = tpm_log_event_raw(buf, size, pcr, (CHAR8 *)ImageLoad,
+				       sizeof(*ImageLoad) + path_size,
+				       EV_EFI_BOOT_SERVICES_APPLICATION,
+				       (CHAR8 *)sha1hash);
+	FreePool(ImageLoad);
+
+	return efi_status;
 }
 
 typedef struct {
@@ -277,7 +253,7 @@ typedef struct {
 	UINT64 VariableDataLength;
 	CHAR16 UnicodeName[1];
 	INT8 VariableData[1];
-} EFI_VARIABLE_DATA_TREE;
+} __attribute__ ((packed)) EFI_VARIABLE_DATA_TREE;
 
 static BOOLEAN tpm_data_measured(CHAR16 *VarName, EFI_GUID VendorGuid, UINTN VarSize, VOID *VarData)
 {
@@ -285,7 +261,7 @@ static BOOLEAN tpm_data_measured(CHAR16 *VarName, EFI_GUID VendorGuid, UINTN Var
 
 	for (i=0; i<measuredcount; i++) {
 		if ((StrCmp (VarName, measureddata[i].VariableName) == 0) &&
-		    (CompareGuid (&VendorGuid, measureddata[i].VendorGuid)) &&
+		    (CompareGuid (&VendorGuid, measureddata[i].VendorGuid) == 0) &&
 		    (VarSize == measureddata[i].Size) &&
 		    (CompareMem (VarData, measureddata[i].Data, VarSize) == 0)) {
 			return TRUE;

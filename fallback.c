@@ -1,16 +1,15 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
- * Copyright 2012-2013 Red Hat, Inc.
- * All rights reserved.
- *
- * See "COPYING" for license terms.
- *
- * Author(s): Peter Jones <pjones@redhat.com>
+ * Copyright Red Hat, Inc.
+ * Copyright Peter Jones <pjones@redhat.com>
  */
 
 #include <efi.h>
 #include <efilib.h>
 
 #include "shim.h"
+
+#define NO_REBOOT L"FB_NO_REBOOT"
 
 EFI_LOADED_IMAGE *this_image = NULL;
 
@@ -54,14 +53,15 @@ get_fallback_verbose(void)
 		ret_;							\
 	})
 
-#define VerbosePrint(fmt, ...)						\
-	({	UINTN line_ = __LINE__;					\
-		UINTN ret_ = 0;						\
-		if (get_fallback_verbose()) {				\
-			console_print(L"%a:%d: ", __func__, line_);	\
-			ret_ = console_print((fmt), ##__VA_ARGS__);	\
-		}							\
-		ret_;							\
+#define VerbosePrint(fmt, ...)                                      \
+	({                                                          \
+		UINTN line_ = __LINE__ - 2;                         \
+		UINTN ret_ = 0;                                     \
+		if (get_fallback_verbose()) {                       \
+			console_print(L"%a:%d: ", __func__, line_); \
+			ret_ = console_print((fmt), ##__VA_ARGS__); \
+		}                                                   \
+		ret_;                                               \
 	})
 
 static EFI_STATUS
@@ -973,6 +973,65 @@ try_start_first_option(EFI_HANDLE parent_image_handle)
 	return efi_status;
 }
 
+static UINT32
+get_fallback_no_reboot(void)
+{
+	EFI_STATUS efi_status;
+	UINT32 no_reboot;
+	UINTN size = sizeof(UINT32);
+
+	efi_status = gRT->GetVariable(NO_REBOOT, &SHIM_LOCK_GUID,
+				      NULL, &size, &no_reboot);
+	if (!EFI_ERROR(efi_status)) {
+		return no_reboot;
+	}
+	return 0;
+}
+
+static EFI_STATUS
+set_fallback_no_reboot(void)
+{
+	EFI_STATUS efi_status;
+	UINT32 no_reboot = 1;
+	efi_status = gRT->SetVariable(NO_REBOOT, &SHIM_LOCK_GUID,
+				      EFI_VARIABLE_NON_VOLATILE
+				      | EFI_VARIABLE_BOOTSERVICE_ACCESS
+				      | EFI_VARIABLE_RUNTIME_ACCESS,
+				      sizeof(UINT32), &no_reboot);
+	return efi_status;
+}
+
+static int
+draw_countdown(void)
+{
+	CHAR16 *title = L"Boot Option Restoration";
+	CHAR16 *message = L"Press any key to stop system reset";
+	int timeout;
+
+	timeout = console_countdown(title, message, 5);
+
+	return timeout;
+}
+
+static int
+get_user_choice(void)
+{
+	int choice;
+	CHAR16 *title[] = {L"Boot Option Restored", NULL};
+	CHAR16 *menu_strings[] = {
+		L"Reset system",
+		L"Continue boot",
+		L"Always continue boot",
+		NULL
+	};
+
+	do {
+		choice = console_select(title, menu_strings, 0);
+	} while (choice < 0 || choice > 2);
+
+	return choice;
+}
+
 extern EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab);
 
@@ -983,7 +1042,7 @@ debug_hook(void)
 	UINT8 *data = NULL;
 	UINTN dataSize = 0;
 	EFI_STATUS efi_status;
-	volatile register int x = 0;
+	register volatile int x = 0;
 	extern char _etext, _edata;
 
 	efi_status = get_variable(L"SHIM_DEBUG", &data, &dataSize,
@@ -1039,6 +1098,26 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 		VerbosePrint(L"tpm not present, starting the first image\n");
 		try_start_first_option(image);
 	} else {
+		if (get_fallback_no_reboot() == 1) {
+			VerbosePrint(L"NO_REBOOT is set, starting the first image\n");
+			try_start_first_option(image);
+		}
+
+		int timeout = draw_countdown();
+		if (timeout == 0)
+			goto reset;
+
+		int choice = get_user_choice();
+		if (choice == 0) {
+			goto reset;
+		} else if (choice == 2) {
+			efi_status = set_fallback_no_reboot();
+			if (EFI_ERROR(efi_status))
+				goto reset;
+		}
+		VerbosePrint(L"tpm present, starting the first image\n");
+		try_start_first_option(image);
+reset:
 		VerbosePrint(L"tpm present, resetting system\n");
 	}
 

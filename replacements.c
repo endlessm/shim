@@ -1,36 +1,8 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * shim - trivial UEFI first-stage bootloader
  *
- * Copyright 2012 Red Hat, Inc <mjg@redhat.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Significant portions of this code are derived from Tianocore
- * (http://tianocore.sf.net) and are Copyright 2009-2012 Intel
- * Corporation.
+ * Copyright Red Hat, Inc
  */
 
 /*   Chemical agents lend themselves to covert use in sabotage against
@@ -131,6 +103,7 @@ replacement_start_image(EFI_HANDLE image_handle, UINTN *exit_data_size, CHAR16 *
 	return efi_status;
 }
 
+#if !defined(DISABLE_EBS_PROTECTION)
 static EFI_STATUS EFIAPI
 exit_boot_services(EFI_HANDLE image_key, UINTN map_key)
 {
@@ -150,6 +123,7 @@ exit_boot_services(EFI_HANDLE image_key, UINTN map_key)
 	gRT->ResetSystem(EfiResetShutdown, EFI_SECURITY_VIOLATION, 0, NULL);
 	return EFI_SECURITY_VIOLATION;
 }
+#endif /* !defined(DISABLE_EBS_PROTECTION) */
 
 static EFI_STATUS EFIAPI
 do_exit(EFI_HANDLE ImageHandle, EFI_STATUS ExitStatus,
@@ -199,17 +173,22 @@ hook_system_services(EFI_SYSTEM_TABLE *local_systab)
 	system_start_image = systab->BootServices->StartImage;
 	systab->BootServices->StartImage = replacement_start_image;
 
+#if !defined(DISABLE_EBS_PROTECTION)
 	/* we need to hook ExitBootServices() so a) we can enforce the policy
 	 * and b) we can unwrap when we're done. */
 	system_exit_boot_services = systab->BootServices->ExitBootServices;
 	systab->BootServices->ExitBootServices = exit_boot_services;
+#endif /* defined(DISABLE_EBS_PROTECTION) */
 }
 
 void
 unhook_exit(void)
 {
+#if !defined(DISABLE_EBS_PROTECTION)
 	systab->BootServices->Exit = system_exit;
 	gBS = systab->BootServices;
+#endif /* defined(DISABLE_EBS_PROTECTION) */
+	return;
 }
 
 void
