@@ -9,6 +9,10 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
       - fixup_git.patch
       - uname.patch
       - use_compare_mem_gcc9.patch
+    + Includes a vendor copy of gnu-efi for now, packaged as an extra
+      tarball.
+      - Added an extra rule to generate the extra tarball. Thanks to
+        Dmitri John Ledkov for help.
   * New patches:
     + fix-Make.coverity-bashisms.patch
       (Trivial changes to remove bashisms in Make.coverity)

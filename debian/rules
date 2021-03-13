@@ -15,7 +15,9 @@ else
 	distributor=debian
 endif
 
-deb_version := $(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+deb_version             := $(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+upstream_version        := $(shell echo $(deb_version) | sed -e "s/-[^-]*$$//")
+plain_upstream_version  := $(shell echo $(upstream_version) | sed -e "s/+dfsg.*//")
 
 DBX_LIST = dbx.esl
 DBX_HASHES = debian/$(distributor)-dbx.hashes
@@ -85,3 +87,7 @@ override_dh_auto_install:
 	# not needed for our build and causes debhelper to complain
 	rm -f debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
 	./debian/signing-template.generate
+
+generate-gnu-efi:
+	git -C gnu-efi archive --prefix=gnu-efi/ HEAD | xz -9 \
+		> ../shim_$(plain_upstream_version).orig-gnu-efitar.xz
