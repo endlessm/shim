@@ -90,4 +90,4 @@ override_dh_auto_install:
 
 generate-gnu-efi:
 	git -C gnu-efi archive --prefix=gnu-efi/ HEAD | xz -9 \
-		> ../shim_$(plain_upstream_version).orig-gnu-efitar.xz
+		> ../shim_$(plain_upstream_version).orig-gnu-efi.tar.xz
