@@ -15,8 +15,12 @@ else
 	distributor=debian
 endif
 
+deb_version := $(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+
 DBX_LIST = dbx.esl
 DBX_HASHES = debian/$(distributor)-dbx.hashes
+SBAT_IN = debian/sbat.$(distributor).csv.in
+SBAT_DATA = data/sbat.$(distributor).csv
 
 include /usr/share/dpkg/architecture.mk
 
@@ -53,14 +57,23 @@ $(DBX_LIST): $(DBX_HASHES)
 	# Support an empty $(DBX_HASHES)
 	touch $@
 
+$(SBAT_DATA): $(SBAT_IN)
+	rm -f $@
+	set -e; \
+	sed -e "s/@DEB_VERSION@/$(deb_version)/g" \
+		-e "s/@UPSTREAM_VERSION@/$(plain_upstream_version)/g" \
+		< $(SBAT_IN) > $(SBAT_DATA)
+	# If we have an empty $(SBAT_DATA), delete
+	if [ ! -s $(SBAT_DATA) ]; then rm -f $(SBAT_DATA); fi
+
 %:
 	dh $@
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
-	rm -f $(DBX_LIST)
+	rm -f $(DBX_LIST) $(SBAT_DATA) sbat.*.csv
 
-override_dh_auto_build: $(DBX_LIST)
+override_dh_auto_build: $(DBX_LIST) $(SBAT_DATA)
 	dh_auto_build -- $(COMMON_OPTIONS)
 
 override_dh_auto_install:

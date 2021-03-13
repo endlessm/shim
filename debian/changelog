@@ -18,6 +18,9 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
   * Switch to using gcc-10 rather than gcc-9. Closes: #978521
   * Add dbx entries for all our existing grub binaries
     + They're insecure, let's break the chainloading hole.
+  * Add Debian SBAT data
+    + Add a Debian SBAT template, and rules to use it
+    + Adds a build-dep on dos2unix
 
  -- Steve McIntyre <93sam@debian.org>  Sun, 21 Feb 2021 13:50:16 +0100
 
