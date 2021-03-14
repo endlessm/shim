@@ -50,14 +50,7 @@ COMMON_OPTIONS += \
 	$(NULL)
 
 $(DBX_LIST): $(DBX_HASHES)
-	rm -f $@
-	set -e; \
-	for HASH in $$(grep -E [[:xdigit:]]{32} $< | sort | uniq); do \
-            echo efisiglist -o $@ -a -h $$HASH; \
-            efisiglist -o $@ -a -h $$HASH; \
-        done
-	# Support an empty $(DBX_HASHES)
-	touch $@
+	./debian/generate_dbx_list $(EFI_ARCH) $< $@
 
 $(SBAT_DATA): $(SBAT_IN)
 	rm -f $@

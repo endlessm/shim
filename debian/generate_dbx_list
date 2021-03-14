@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Helper script - generate a DBX file for inclusion into a shim build
+#
+# Takes an input file (e.g. debian-dbx.hashes) with data in the form
+#
+# <hex-encoded sha256 checksums> <arch>
+#
+# and generates a siglist of the hashes for just the architecture we
+# want. No point including all the hashes for all the arches, it just
+# bloats things and slows things down.
+
+set -e
+
+ARCH=$1
+IN=$2
+OUT=$3
+
+rm -f $OUT
+for HASH in $(grep -E "[[:xdigit:]]{32} $ARCH" < $IN | \
+		  awk '{print $1}' | sort | uniq); do
+    echo "  Adding $HASH to dbx list"
+    efisiglist -o $OUT -a -h $HASH
+done
+
+# If we have an empty hashes file, create an empty DBX file
+touch $OUT
