@@ -13,12 +13,6 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
       tarball.
       - Added an extra rule to generate the extra tarball. Thanks to
         Dmitri John Ledkov for help.
-  * New patches:
-    + fix-Make.coverity-bashisms.patch
-      (Trivial changes to remove bashisms in Make.coverity)
-    + cast-CHAR8-string-handling.patch
-      (Cast CHAR8 strings to use (const char *) when using string
-       functions)
   * Switch to using gcc-10 rather than gcc-9. Closes: #978521
   * Add dbx entries for all our existing grub binaries
     + They're insecure, let's break the chainloading hole.
