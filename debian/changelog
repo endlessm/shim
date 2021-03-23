@@ -1,7 +1,7 @@
-shim (15+1613861442.888f5b5-1) unstable; urgency=medium
+shim (15.3-1) unstable; urgency=medium
 
   [ Steve McIntyre ]
-  * Switch to much-newer upstream code point with many fixes
+  * Switch to much-newer release with many fixes
     + Particularly pulling in SBAT changes for better revocation support
     + Remove all our old patches, no longer needed:
       - avoid_null_vsprint.patch
@@ -9,10 +9,9 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
       - fixup_git.patch
       - uname.patch
       - use_compare_mem_gcc9.patch
-    + Includes a vendor copy of gnu-efi for now, packaged as an extra
-      tarball.
-      - Added an extra rule to generate the extra tarball. Thanks to
-        Dmitri John Ledkov for help.
+    + Now includes a vendor copy of gnu-efi with quite a few extra
+      fixes needed.
+    + Update copyright file to cover these changes
   * Switch to using gcc-10 rather than gcc-9. Closes: #978521
   * Add dbx entries for all our existing grub binaries
     + They're insecure, let's break the chainloading hole.
@@ -20,7 +19,7 @@ shim (15+1613861442.888f5b5-1) unstable; urgency=medium
     + Add a Debian SBAT template, and rules to use it
     + Adds a build-dep on dos2unix
 
- -- Steve McIntyre <93sam@debian.org>  Sun, 21 Feb 2021 13:50:16 +0100
+ -- Steve McIntyre <93sam@debian.org>  Tue, 23 Mar 2021 23:39:48 +0000
 
 shim (15+1533136590.3beb971-10) unstable; urgency=medium
 
