@@ -2,7 +2,7 @@
   C Run-Time Libraries (CRT) Wrapper Implementation for OpenSSL-based
   Cryptographic Library.
 
-Copyright (c) 2009 - 2017, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2009 - 2016, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 **/
 
-#include <CrtLibSupport.h>
+#include <OpenSslSupport.h>
 
 int errno = 0;
 
@@ -121,45 +121,6 @@ QuickSortWorker (
 // -- String Manipulation Routines --
 //
 
-/* Scan a string for the last occurrence of a character */
-char *strrchr (const char *str, int c)
-{
-  char * save;
-
-  for (save = NULL; ; ++str) {
-    if (*str == c) {
-      save = (char *)str;
-    }
-    if (*str == 0) {
-      return (save);
-    }
-  }
-}
-
-/* Compare first n bytes of string s1 with string s2, ignoring case */
-int strncasecmp (const char *s1, const char *s2, size_t n)
-{
-  int Val;
-
-  ASSERT(s1 != NULL);
-  ASSERT(s2 != NULL);
-
-  if (n != 0) {
-    do {
-      Val = tolower(*s1) - tolower(*s2);
-      if (Val != 0) {
-        return Val;
-      }
-      ++s1;
-      ++s2;
-      if (*s1 == '\0') {
-        break;
-      }
-    } while (--n != 0);
-  }
-  return 0;
-}
-
 /* Read formatted data from a string */
 int sscanf (const char *buffer, const char *format, ...)
 {
@@ -168,123 +129,6 @@ int sscanf (const char *buffer, const char *format, ...)
   // no direct functionality logic dependency in present UEFI cases.
   //
   return 0;
-}
-
-/* Maps errnum to an error-message string */
-char * strerror (int errnum)
-{
-  return NULL;
-}
-
-/* Computes the length of the maximum initial segment of the string pointed to by s1
-   which consists entirely of characters from the string pointed to by s2. */
-size_t strspn (const char *s1 , const char *s2)
-{
-  UINT8   Map[32];
-  UINT32  Index;
-  size_t  Count;
-
-  for (Index = 0; Index < 32; Index++) {
-    Map[Index] = 0;
-  }
-
-  while (*s2) {
-    Map[*s2 >> 3] |= (1 << (*s2 & 7));
-    s2++;
-  }
-
-  if (*s1) {
-    Count = 0;
-    while (Map[*s1 >> 3] & (1 << (*s1 & 7))) {
-      Count++;
-      s1++;
-    }
-
-    return Count;
-  }
-
-  return 0;
-}
-
-/* Computes the length of the maximum initial segment of the string pointed to by s1
-   which consists entirely of characters not from the string pointed to by s2. */
-size_t strcspn (const char *s1, const char *s2)
-{
-  UINT8  Map[32];
-  UINT32 Index;
-  size_t Count;
-
-  for (Index = 0; Index < 32; Index++) {
-    Map[Index] = 0;
-  }
-
-  while (*s2) {
-    Map[*s2 >> 3] |= (1 << (*s2 & 7));
-    s2++;
-  }
-
-  Map[0] |= 1;
-
-  Count   = 0;
-  while (!(Map[*s1 >> 3] & (1 << (*s1 & 7)))) {
-    Count ++;
-    s1++;
-  }
-
-  return Count;
-}
-
-//
-// -- Character Classification Routines --
-//
-
-/* Determines if a particular character is a decimal-digit character */
-int isdigit (int c)
-{
-  //
-  // <digit> ::= [0-9]
-  //
-  return (('0' <= (c)) && ((c) <= '9'));
-}
-
-/* Determine if an integer represents character that is a hex digit */
-int isxdigit (int c)
-{
-  //
-  // <hexdigit> ::= [0-9] | [a-f] | [A-F]
-  //
-  return ((('0' <= (c)) && ((c) <= '9')) ||
-          (('a' <= (c)) && ((c) <= 'f')) ||
-          (('A' <= (c)) && ((c) <= 'F')));
-}
-
-/* Determines if a particular character represents a space character */
-int isspace (int c)
-{
-  //
-  // <space> ::= [ ]
-  //
-  return ((c) == ' ');
-}
-
-/* Determine if a particular character is an alphanumeric character */
-int isalnum (int c)
-{
-  //
-  // <alnum> ::= [0-9] | [a-z] | [A-Z]
-  //
-  return ((('0' <= (c)) && ((c) <= '9')) ||
-          (('a' <= (c)) && ((c) <= 'z')) ||
-          (('A' <= (c)) && ((c) <= 'Z')));
-}
-
-/* Determines if a particular character is in upper case */
-int isupper (int c)
-{
-  //
-  // <uppercase letter> := [A-Z]
-  //
-  return (('A' <= (c)) && ((c) <= 'Z'));
 }
 
 //
@@ -309,15 +153,6 @@ unsigned long strtoul (const char *nptr, char **endptr, int base)
   // no direct functionality logic dependency in present UEFI cases.
   //
   return 0;
-}
-
-/* Convert character to lowercase */
-int tolower (int c)
-{
-  if (('A' <= (c)) && ((c) <= 'Z')) {
-    return (c - ('A' - 'a'));
-  }
-  return (c);
 }
 
 //
@@ -365,10 +200,50 @@ char *getenv (const char *varname)
 // -- Stream I/O Routines --
 //
 
+/* Write formatted output using a pointer to a list of arguments */
+int vfprintf (FILE *stream, const char *format, VA_LIST arg)
+{
+  return 0;
+}
+
 /* Write data to a stream */
 size_t fwrite (const void *buffer, size_t size, size_t count, FILE *stream)
 {
   return 0;
+}
+
+//
+//  -- Dummy OpenSSL Support Routines --
+//
+
+void *UI_OpenSSL(void)
+{
+  return NULL;
+}
+
+int X509_load_cert_file (VOID *ctx, const char *file, int type)
+{
+  return 0;
+}
+
+int X509_load_crl_file (VOID *ctx, const char *file, int type)
+{
+  return 0;
+}
+
+int chmod (const char *c, mode_t m)
+{
+  return -1;
+}
+
+int close (int f)
+{
+  return -1;
+}
+
+void closelog (void)
+{
+
 }
 
 #ifdef __GNUC__
@@ -379,6 +254,7 @@ VOID
   VOID
   ) __attribute__((__noreturn__));
 
+
 STATIC
 VOID
 EFIAPI
@@ -388,7 +264,8 @@ NopFunction (
 {
 }
 
-void abort (void)
+
+void exit (int e)
 {
   NoReturnFuncPtr NoReturnFunc;
 
@@ -399,9 +276,8 @@ void abort (void)
 
 #else
 
-void abort (void)
+void exit (int e)
 {
-  // Do nothing
 }
 
 #endif
@@ -417,6 +293,16 @@ FILE *fopen (const char *c, const char *m)
 }
 
 size_t fread (void *b, size_t c, size_t i, FILE *f)
+{
+  return 0;
+}
+
+int fputs (const char *s, FILE *f)
+{
+  return 0;
+}
+
+int fprintf (FILE *f, const char *s, ...)
 {
   return 0;
 }
@@ -437,6 +323,36 @@ gid_t getgid (void)
 }
 
 gid_t getegid (void)
+{
+  return 0;
+}
+
+off_t lseek (int a, off_t o, int d)
+{
+  return 0;
+}
+
+void openlog (const char *c, int a, int b)
+{
+
+}
+
+ssize_t read (int f, void *b, size_t c)
+{
+  return 0;
+}
+
+int stat (const char *c, struct stat *s)
+{
+  return -1;
+}
+
+void syslog (int a, const char *c, ...)
+{
+
+}
+
+ssize_t write (int f, const void *b, size_t l)
 {
   return 0;
 }

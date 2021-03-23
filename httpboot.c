@@ -1,39 +1,12 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 /*
  * Copyright 2015 SUSE LINUX GmbH <glin@suse.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Significant portions of this code are derived from Tianocore
  * (http://tianocore.sf.net) and are Copyright 2009-2012 Intel
  * Corporation.
  */
-
-#include <efi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 static UINTN
@@ -157,7 +130,7 @@ find_httpboot (EFI_HANDLE device)
 
 			/* Save the current URI */
 			UriNode = (URI_DEVICE_PATH *)Node;
-			uri_size = strlena(UriNode->Uri);
+			uri_size = strlen(UriNode->Uri);
 			uri = AllocatePool(uri_size + 1);
 			if (!uri) {
 				perror(L"Failed to allocate uri\n");
@@ -183,10 +156,10 @@ generate_next_uri (CONST CHAR8 *current_uri, CONST CHAR8 *next_loader,
 	UINTN path_len = 0;
 	UINTN count = 0;
 
-	if (strncmpa(current_uri, (CHAR8 *)"http://", 7) == 0) {
+	if (strncmp(current_uri, (CHAR8 *)"http://", 7) == 0) {
 		ptr = current_uri + 7;
 		count += 7;
-	} else if (strncmpa(current_uri, (CHAR8 *)"https://", 8) == 0) {
+	} else if (strncmp(current_uri, (CHAR8 *)"https://", 8) == 0) {
 		ptr = current_uri + 8;
 		count += 8;
 	} else {
@@ -194,7 +167,7 @@ generate_next_uri (CONST CHAR8 *current_uri, CONST CHAR8 *next_loader,
 	}
 
 	/* Extract the path */
-	next_len = strlena(next_loader);
+	next_len = strlen(next_loader);
 	while (*ptr != '\0') {
 		count++;
 		if (*ptr == '/')
@@ -219,9 +192,9 @@ extract_hostname (CONST CHAR8 *url, CHAR8 **hostname)
 	CONST CHAR8 *ptr, *start;
 	UINTN host_len = 0;
 
-	if (strncmpa(url, (CHAR8 *)"http://", 7) == 0)
+	if (strncmp(url, (CHAR8 *)"http://", 7) == 0)
 		start = url + 7;
-	else if (strncmpa(url, (CHAR8 *)"https://", 8) == 0)
+	else if (strncmp(url, (CHAR8 *)"https://", 8) == 0)
 		start = url + 8;
 	else
 		return EFI_INVALID_PARAMETER;
@@ -427,7 +400,7 @@ set_ip4(EFI_HANDLE *nic, IPv4_DEVICE_PATH *ip4node)
 }
 
 static VOID EFIAPI
-httpnotify (EFI_EVENT Event, VOID *Context)
+httpnotify (EFI_EVENT Event UNUSED, VOID *Context)
 {
 	*((BOOLEAN *) Context) = TRUE;
 }
@@ -598,7 +571,7 @@ receive_http_response(EFI_HTTP_PROTOCOL *http, VOID **buffer, UINT64 *buf_size)
 
 	/* Check the length of the file */
 	for (i = 0; i < rx_message.HeaderCount; i++) {
-		if (!strcmpa(rx_message.Headers[i].FieldName, (CHAR8 *)"Content-Length")) {
+		if (!strcmp(rx_message.Headers[i].FieldName, (CHAR8 *)"Content-Length")) {
 			*buf_size = ascii_to_int(rx_message.Headers[i].FieldValue);
 		}
 	}
@@ -743,14 +716,14 @@ httpboot_fetch_buffer (EFI_HANDLE image, VOID **buffer, UINT64 *buf_size)
 {
 	EFI_STATUS efi_status;
 	EFI_HANDLE nic;
-	CHAR8 *next_loader = NULL;
+	CHAR8 next_loader[sizeof DEFAULT_LOADER_CHAR];
 	CHAR8 *next_uri = NULL;
 	CHAR8 *hostname = NULL;
 
 	if (!uri)
 		return EFI_NOT_READY;
 
-	next_loader = translate_slashes(DEFAULT_LOADER_CHAR);
+	translate_slashes(next_loader, DEFAULT_LOADER_CHAR);
 
 	/* Create the URI for the next loader based on the original URI */
 	efi_status = generate_next_uri(uri, next_loader, &next_uri);

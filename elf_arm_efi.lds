@@ -56,8 +56,6 @@ SECTIONS
     *(.vendor_cert)
   }
   . = ALIGN(4096);
-
-  . = ALIGN(4096);
   .rel :
   {
     *(.rel.dyn)
@@ -68,6 +66,18 @@ SECTIONS
   }
   _edata = .;
   _data_size = . - _data;
+  . = ALIGN(4096);
+  .sbat :
+  {
+    _sbat = .;
+    *(.sbat)
+    *(.sbat.*)
+  }
+  _esbat = .;
+  _sbat_vsize = . - _sbat;
+  . = ALIGN(4096);
+  _sbat_size = . - _sbat;
+  _alldata_size = . - _data;
 
   . = ALIGN(4096);
   .dynsym   : { *(.dynsym) }

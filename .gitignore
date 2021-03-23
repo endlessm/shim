@@ -1,6 +1,4 @@
-.*.sw?
-certdb
-shim_cert.h
+Make.local
 *.a
 *.CSV
 *.cer
@@ -15,6 +13,9 @@ shim_cert.h
 *.efi
 *.efi.debug
 *.efi.signed
+*.esl
+*.gdbinit
+*.hash
 *.key
 *.key
 *.o
@@ -23,7 +24,17 @@ shim_cert.h
 *.so
 *.srl
 *.srl.old
+*.sw?
 *.tar.*
+/build*/
+/certdb/
+/cov-int/
+/random.bin
+/sbat.*.csv
+/scan-results/
+[Ss]creenlog*
+shim_cert.h
+/test-*
+!/test-*.c
+/test-random.h
 version.c
-cov-int/
-scan-results/

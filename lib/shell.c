@@ -1,13 +1,9 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * Copyright 2012 <James.Bottomley@HansenPartnership.com>
  *
- * see COPYING file
- *
  * misc shell helper functions
  */
-#include <efi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 EFI_STATUS

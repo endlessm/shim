@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * The crypt_blowfish homepage is:
  *
@@ -42,11 +43,6 @@
  * Blowfish library (I can't be sure if I would think of something if I
  * hadn't seen his code).
  */
-
-#include <efi.h>
-#include <efilib.h>
-
-/* Just to make sure the prototypes match the actual definitions */
 #include "shim.h"
 
 typedef unsigned int BF_word;

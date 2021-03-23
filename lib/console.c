@@ -1,14 +1,8 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * Copyright 2012 <James.Bottomley@HansenPartnership.com>
  * Copyright 2013 Red Hat Inc. <pjones@redhat.com>
- *
- * see COPYING file
  */
-#include <efi.h>
-#include <efilib.h>
-#include <stdarg.h>
-#include <stdbool.h>
-
 #include "shim.h"
 
 static UINT8 console_text_mode = 0;
@@ -89,27 +83,27 @@ VOID console_fini(VOID)
 		setup_console(0);
 }
 
-UINTN
+UINTN EFIAPI
 console_print(const CHAR16 *fmt, ...)
 {
-	va_list args;
+	ms_va_list args;
 	UINTN ret;
 
 	if (!console_text_mode)
 		setup_console(1);
 
-	va_start(args, fmt);
+	ms_va_start(args, fmt);
 	ret = VPrint(fmt, args);
-	va_end(args);
+	ms_va_end(args);
 
 	return ret;
 }
 
-UINTN
+UINTN EFIAPI
 console_print_at(UINTN col, UINTN row, const CHAR16 *fmt, ...)
 {
 	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
-	va_list args;
+	ms_va_list args;
 	UINTN ret;
 
 	if (!console_text_mode)
@@ -117,9 +111,9 @@ console_print_at(UINTN col, UINTN row, const CHAR16 *fmt, ...)
 
 	co->SetCursorPosition(co, col, row);
 
-	va_start(args, fmt);
+	ms_va_start(args, fmt);
 	ret = VPrint(fmt, args);
-	va_end(args);
+	ms_va_end(args);
 
 	return ret;
 }
@@ -214,7 +208,7 @@ console_print_box_at(CHAR16 *str_arr[], int highlight,
 			if (col < 0)
 				col = 0;
 
-			CopyMem(Line + col + 1, s, min(len, size_cols - 2)*2);
+			CopyMem(Line + col + 1, s, MIN(len, size_cols - 2)*2);
 		}
 		if (line >= 0 && line == highlight)
 			co->SetAttribute(co, EFI_LIGHTGRAY |
@@ -409,12 +403,171 @@ console_notify(CHAR16 *string)
 	console_alertbox(str_arr);
 }
 
-#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
+void
+console_save_and_set_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode)
+{
+	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
+
+	if (!SavedMode) {
+		console_print(L"Invalid parameter: SavedMode\n");
+		return;
+	}
+
+	CopyMem(SavedMode, co->Mode, sizeof(SIMPLE_TEXT_OUTPUT_MODE));
+	co->EnableCursor(co, FALSE);
+	co->SetAttribute(co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
+}
+
+void
+console_restore_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode)
+{
+	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
+
+	co->EnableCursor(co, SavedMode->CursorVisible);
+	co->SetCursorPosition(co, SavedMode->CursorColumn,
+				SavedMode->CursorRow);
+	co->SetAttribute(co, SavedMode->Attribute);
+}
+
+int
+console_countdown(CHAR16* title, const CHAR16* message, int timeout)
+{
+	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
+	SIMPLE_INPUT_INTERFACE *ci = ST->ConIn;
+	SIMPLE_TEXT_OUTPUT_MODE SavedMode;
+	EFI_INPUT_KEY key;
+	EFI_STATUS efi_status;
+	UINTN cols, rows;
+	CHAR16 *titles[2];
+	int wait = 10000000;
+
+	console_save_and_set_mode(&SavedMode);
+
+	titles[0] = title;
+	titles[1] = NULL;
+
+	console_print_box_at(titles, -1, 0, 0, -1, -1, 1, 1);
+
+	co->QueryMode(co, co->Mode->Mode, &cols, &rows);
+
+	console_print_at((cols - StrLen(message)) / 2, rows / 2, message);
+	while (1) {
+		if (timeout > 1)
+			console_print_at(2, rows - 3,
+					 L"Booting in %d seconds  ",
+					 timeout);
+		else if (timeout)
+			console_print_at(2, rows - 3,
+					 L"Booting in %d second   ",
+					 timeout);
+
+		efi_status = WaitForSingleEvent(ci->WaitForKey, wait);
+		if (efi_status != EFI_TIMEOUT) {
+			/* Clear the key in the queue */
+			ci->ReadKeyStroke(ci, &key);
+			break;
+		}
+
+		timeout--;
+		if (!timeout)
+			break;
+	}
+
+	console_restore_mode(&SavedMode);
+
+	return timeout;
+}
+
+#define HORIZONTAL_MAX_OK 1920
+#define VERTICAL_MAX_OK 1080
+#define COLUMNS_MAX_OK 200
+#define ROWS_MAX_OK 100
+
+void
+console_mode_handle(VOID)
+{
+	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
+	EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
+	EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+	EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *Info;
+
+	UINTN mode_set;
+	UINTN rows = 0, columns = 0;
+	EFI_STATUS efi_status = EFI_SUCCESS;
+
+	efi_status = gBS->LocateProtocol(&gop_guid, NULL, (void **)&gop);
+	if (EFI_ERROR(efi_status)) {
+		console_error(L"Locate graphic output protocol fail", efi_status);
+		return;
+	}
+
+	Info = gop->Mode->Info;
+
+	/*
+	 * Start verifying if we are in a resolution larger than Full HD
+	 * (1920x1080). If we're not, assume we're in a good mode and do not
+	 * try to change it.
+	 */
+	if (Info->HorizontalResolution <= HORIZONTAL_MAX_OK &&
+	    Info->VerticalResolution <= VERTICAL_MAX_OK) {
+		/* keep original mode and return */
+		return;
+	}
+
+        efi_status = co->QueryMode(co, co->Mode->Mode, &columns, &rows);
+	if (EFI_ERROR(efi_status)) {
+		console_error(L"Console query mode fail", efi_status);
+		return;
+	}
+
+	/*
+	 * Verify current console output to check if the character columns and
+	 * rows in a good mode.
+	 */
+	if (columns <= COLUMNS_MAX_OK && rows <= ROWS_MAX_OK) {
+		/* keep original mode and return */
+		return;
+	}
+
+	if (!console_text_mode)
+		setup_console(1);
+
+	co->Reset(co, TRUE);
+
+	/*
+	 * If we reached here, then we have a high resolution screen and the
+	 * text too small. Try to switch to a better mode. Mode number 2 is
+	 * first non standard mode, which is provided by the device
+	 * manufacturer, so it should be a good mode.
+	 */
+	if (co->Mode->MaxMode > 2)
+		mode_set = 2;
+	else
+		mode_set = 0;
+
+	efi_status = co->SetMode(co, mode_set);
+	if (EFI_ERROR(efi_status) && mode_set != 0) {
+		/*
+		 * Set to 0 mode which is required that all output devices
+		 * support at least 80x25 text mode.
+		 */
+		mode_set = 0;
+		efi_status = co->SetMode(co, mode_set);
+	}
+
+	co->ClearScreen(co);
+
+	if (EFI_ERROR(efi_status)) {
+		console_error(L"Console set mode fail", efi_status);
+	}
+
+	return;
+}
 
 /* Copy of gnu-efi-3.0 with the added secure boot strings */
 static struct {
     EFI_STATUS      Code;
-    WCHAR	    *Desc;
+    CHAR16	   *Desc;
 } error_table[] = {
 	{  EFI_SUCCESS,                L"Success"},
 	{  EFI_LOAD_ERROR,             L"Load Error"},
@@ -445,7 +598,7 @@ static struct {
 	{  EFI_SECURITY_VIOLATION,     L"Security Violation"},
 
 	// warnings
-	{  EFI_WARN_UNKOWN_GLYPH,      L"Warning Unknown Glyph"},
+	{  EFI_WARN_UNKNOWN_GLYPH,     L"Warning Unknown Glyph"},
 	{  EFI_WARN_DELETE_FAILURE,    L"Warning Delete Failure"},
 	{  EFI_WARN_WRITE_FAILURE,     L"Warning Write Failure"},
 	{  EFI_WARN_BUFFER_TOO_SMALL,  L"Warning Buffer Too Small"},
@@ -521,33 +674,6 @@ setup_verbosity(VOID)
 	}
 
 	setup_console(-1);
-}
-
-/* Included here because they mess up the definition of va_list and friends */
-#include <Library/BaseCryptLib.h>
-#include <openssl/err.h>
-#include <openssl/crypto.h>
-
-static int
-print_errors_cb(const char *str, size_t len, void *u)
-{
-	console_print(L"%a", str);
-
-	return len;
-}
-
-EFI_STATUS
-print_crypto_errors(EFI_STATUS efi_status,
-		    char *file, const char *func, int line)
-{
-	if (!(verbose && EFI_ERROR(efi_status)))
-		return efi_status;
-
-	console_print(L"SSL Error: %a:%d %a(): %r\n", file, line, func,
-		      efi_status);
-	ERR_print_errors_cb(print_errors_cb, NULL);
-
-	return efi_status;
 }
 
 VOID

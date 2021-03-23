@@ -8,8 +8,8 @@ SECTIONS
   ImageBase = .;
   .hash : { *(.hash) }	/* this MUST come first! */
   . = ALIGN(4096);
-  .eh_frame : 
-  { 
+  .eh_frame :
+  {
     *(.eh_frame)
   }
   . = ALIGN(4096);
@@ -17,6 +17,8 @@ SECTIONS
   {
    _text = .;
    *(.text)
+   *(.text.*)
+   *(.gnu.linkonce.t.*)
    _etext = .;
   }
   . = ALIGN(4096);
@@ -69,6 +71,15 @@ SECTIONS
   }
   _edata = .;
   _data_size = . - _data;
+  . = ALIGN(4096);
+  .sbat :
+  {
+    _sbat = .;
+    *(.sbat)
+    *(.sbat.*)
+  }
+  _esbat = .;
+  _sbat_size = . - _sbat;
 
   . = ALIGN(4096);
   .dynsym   : { *(.dynsym) }

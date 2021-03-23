@@ -1,12 +1,7 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * Copyright 2012 <James.Bottomley@HansenPartnership.com>
- *
- * see COPYING file
  */
-
-#include <efi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 EFI_STATUS
@@ -67,8 +62,8 @@ simple_file_open(EFI_HANDLE image, CHAR16 *name, EFI_FILE **file, UINT64 mode)
 }
 
 EFI_STATUS
-simple_dir_read_all_by_handle(EFI_HANDLE image, EFI_FILE *file, CHAR16* name, EFI_FILE_INFO **entries,
-		    int *count)
+simple_dir_read_all_by_handle(EFI_HANDLE image UNUSED, EFI_FILE *file,
+			      CHAR16* name, EFI_FILE_INFO **entries, int *count)
 {
 	EFI_STATUS efi_status;
 	char buf[4096];
@@ -403,10 +398,10 @@ simple_file_selector(EFI_HANDLE * im, CHAR16 ** title, CHAR16 * name,
 		filter = L"";
 	if (!*im) {
 		EFI_HANDLE h;
-		CHAR16 *volname;
+		CHAR16 *volname = NULL;
 
-		simple_volume_selector(title, &volname, &h);
-		if (!volname)
+		efi_status = simple_volume_selector(title, &volname, &h);
+		if (EFI_ERROR(efi_status) || !volname)
 			return;
 		FreePool(volname);
 		*im = h;

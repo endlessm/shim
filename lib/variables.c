@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
 /*
  * Copyright 2012 <James.Bottomley@HansenPartnership.com>
- *
- * see COPYING file
  *
  * Portions of this file are a direct cut and paste from Tianocore
  * (http://tianocore.sf.net)
@@ -9,46 +8,112 @@
  *  SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigImpl.c
  *
  * Copyright (c) 2011 - 2012, Intel Corporation. All rights reserved.<BR>
- * This program and the accompanying materials
- * are licensed and made available under the terms and conditions of the BSD License
- * which accompanies this distribution.  The full text of the license may be found
- * at
- * http://opensource.org/licenses/bsd-license.php
- *
- * THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
- * WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
  *
  */
-#include <efi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 EFI_STATUS
-variable_create_esl(void *cert, int cert_len, EFI_GUID *type, EFI_GUID *owner,
-		    void **out, int *outlen)
+fill_esl(const EFI_SIGNATURE_DATA *first_sig, const size_t howmany,
+	 const EFI_GUID *type, const UINT32 sig_size,
+	 uint8_t *out, size_t *outlen)
 {
-	*outlen = cert_len + sizeof(EFI_SIGNATURE_LIST) + sizeof(EFI_GUID);
+	EFI_SIGNATURE_LIST *sl;
+	EFI_SIGNATURE_DATA *sd;
+	size_t needed = 0;
+	size_t data_len = howmany * sig_size;
+
+	dprint(L"fill_esl: first_sig=0x%llx, data_len=%lu\n", first_sig, data_len);
+
+	if ((out && !first_sig) || !howmany || !type || !sig_size || !outlen)
+		return EFI_INVALID_PARAMETER;
+
+	if (howmany > (UINT32_MAX - sizeof(EFI_SIGNATURE_LIST)) / sig_size)
+		return EFI_INVALID_PARAMETER;
+
+	needed = sizeof(EFI_SIGNATURE_LIST) + data_len;
+	if (!out || *outlen < needed) {
+		*outlen = needed;
+		return EFI_BUFFER_TOO_SMALL;
+	}
+
+	*outlen = needed;
+	sl = (EFI_SIGNATURE_LIST *)out;
+
+	sl->SignatureHeaderSize = 0;
+	sl->SignatureType = *type;
+	sl->SignatureSize = sig_size;
+	sl->SignatureListSize = needed;
+
+	sd = (EFI_SIGNATURE_DATA *)(out + sizeof(EFI_SIGNATURE_LIST));
+	CopyMem(sd, first_sig, data_len);
+
+	return EFI_SUCCESS;
+}
+
+EFI_STATUS
+fill_esl_with_one_signature(const uint8_t *data, const uint32_t data_len,
+			    const EFI_GUID *type, const EFI_GUID *owner,
+			    uint8_t *out, size_t *outlen)
+{
+	EFI_STATUS efi_status;
+	EFI_SIGNATURE_DATA *sd = NULL;
+	UINT32 sig_size = sizeof(EFI_SIGNATURE_DATA) - 1 + data_len;
+
+	if (data_len > UINT32_MAX - sizeof(EFI_SIGNATURE_DATA) + 1)
+		return EFI_INVALID_PARAMETER;
+
+	if (out) {
+		sd = AllocateZeroPool(sig_size);
+		if (owner)
+			CopyMem(sd, owner, sizeof(EFI_GUID));
+		CopyMem(sd->SignatureData, data, data_len);
+	}
+
+	efi_status = fill_esl(sd, 1, type, sig_size, out, outlen);
+
+	if (out)
+		FreePool(sd);
+	return efi_status;
+}
+
+EFI_STATUS
+variable_create_esl(const EFI_SIGNATURE_DATA *first_sig, const size_t howmany,
+		    const EFI_GUID *type, const UINT32 sig_size,
+		    uint8_t **out, size_t *outlen)
+{
+	EFI_STATUS efi_status;
+
+	*outlen = 0;
+	efi_status = fill_esl(first_sig, howmany, type, sig_size, NULL, outlen);
+	if (efi_status != EFI_BUFFER_TOO_SMALL)
+		return efi_status;
 
 	*out = AllocateZeroPool(*outlen);
 	if (!*out)
 		return EFI_OUT_OF_RESOURCES;
 
-	EFI_SIGNATURE_LIST *sl = *out;
+	return fill_esl(first_sig, howmany, type, sig_size, *out, outlen);
+}
 
-	sl->SignatureHeaderSize = 0;
-	sl->SignatureType = *type;
-	sl->SignatureSize = cert_len + sizeof(EFI_GUID);
-	sl->SignatureListSize = *outlen;
+EFI_STATUS
+variable_create_esl_with_one_signature(const uint8_t* data, const size_t data_len,
+				       const EFI_GUID *type, const EFI_GUID *owner,
+				       uint8_t **out, size_t *outlen)
+{
+	EFI_STATUS efi_status;
 
-	EFI_SIGNATURE_DATA *sd = *out + sizeof(EFI_SIGNATURE_LIST);
+	*outlen = 0;
+	efi_status = fill_esl_with_one_signature(data, data_len, type, owner,
+						 NULL, outlen);
+	if (efi_status != EFI_BUFFER_TOO_SMALL)
+		return efi_status;
 
-	if (owner)
-		sd->SignatureOwner = *owner;
+	*out = AllocateZeroPool(*outlen);
+	if (!*out)
+		return EFI_OUT_OF_RESOURCES;
 
-	CopyMem(sd->SignatureData, cert, cert_len);
-
-	return EFI_SUCCESS;
+	return fill_esl_with_one_signature(data, data_len, type, owner, *out,
+					   outlen);
 }
 
 EFI_STATUS
@@ -123,8 +188,8 @@ CreateTimeBasedPayload(IN OUT UINTN * DataSize, IN OUT UINT8 ** Data)
 }
 
 EFI_STATUS
-SetSecureVariable(CHAR16 *var, UINT8 *Data, UINTN len, EFI_GUID owner,
-		  UINT32 options, int createtimebased)
+SetSecureVariable(const CHAR16 * const var, UINT8 *Data, UINTN len,
+		  EFI_GUID owner, UINT32 options, int createtimebased)
 {
 	EFI_SIGNATURE_LIST *Cert;
 	UINTN DataSize;
@@ -137,9 +202,10 @@ SetSecureVariable(CHAR16 *var, UINT8 *Data, UINTN len, EFI_GUID owner,
 		return EFI_SECURITY_VIOLATION;
 
 	if (createtimebased) {
-		int ds;
-		efi_status = variable_create_esl(Data, len, &X509_GUID, NULL,
-						 (void **)&Cert, &ds);
+		size_t ds;
+		efi_status = variable_create_esl_with_one_signature(
+			Data, len, &X509_GUID, NULL,
+			(uint8_t **)&Cert, &ds);
 		if (EFI_ERROR(efi_status)) {
 			console_print(L"Failed to create %s certificate %d\n",
 				      var, efi_status);
@@ -159,7 +225,7 @@ SetSecureVariable(CHAR16 *var, UINT8 *Data, UINTN len, EFI_GUID owner,
 		return efi_status;
 	}
 
-	efi_status = gRT->SetVariable(var, &owner,
+	efi_status = gRT->SetVariable((CHAR16 *)var, &owner,
 			EFI_VARIABLE_NON_VOLATILE |
 			EFI_VARIABLE_RUNTIME_ACCESS |
 			EFI_VARIABLE_BOOTSERVICE_ACCESS |
@@ -204,36 +270,84 @@ SETOSIndicationsAndReboot(UINT64 indications)
 }
 
 EFI_STATUS
-get_variable_attr(CHAR16 *var, UINT8 **data, UINTN *len, EFI_GUID owner,
-		  UINT32 *attributes)
+get_variable_attr(const CHAR16 * const var, UINT8 **data, UINTN *len,
+		  EFI_GUID owner, UINT32 *attributes)
 {
 	EFI_STATUS efi_status;
 
+	if (!len)
+		return EFI_INVALID_PARAMETER;
+
 	*len = 0;
 
-	efi_status = gRT->GetVariable(var, &owner, NULL, len, NULL);
+	efi_status = gRT->GetVariable((CHAR16 *)var, &owner, NULL, len, NULL);
 	if (efi_status != EFI_BUFFER_TOO_SMALL) {
 		if (!EFI_ERROR(efi_status)) /* this should never happen */
 			return EFI_PROTOCOL_ERROR;
 		return efi_status;
 	}
 
-	*data = AllocateZeroPool(*len);
+	if (!data)
+		return EFI_INVALID_PARAMETER;
+
+	/*
+	 * Add three zero pad bytes; at least one correctly aligned UCS-2
+	 * character.
+	 */
+	*data = AllocateZeroPool(*len + 3);
 	if (!*data)
 		return EFI_OUT_OF_RESOURCES;
 
-	efi_status = gRT->GetVariable(var, &owner, attributes, len, *data);
+	efi_status = gRT->GetVariable((CHAR16 *)var, &owner, attributes, len, *data);
 	if (EFI_ERROR(efi_status)) {
 		FreePool(*data);
 		*data = NULL;
 	}
+
 	return efi_status;
 }
 
 EFI_STATUS
-get_variable(CHAR16 *var, UINT8 **data, UINTN *len, EFI_GUID owner)
+get_variable(const CHAR16 * const var, UINT8 **data, UINTN *len, EFI_GUID owner)
 {
 	return get_variable_attr(var, data, len, owner, NULL);
+}
+
+EFI_STATUS
+get_variable_size(const CHAR16 * const var, EFI_GUID owner, UINTN *lenp)
+{
+	UINTN len = 0;
+	EFI_STATUS efi_status;
+
+	efi_status = get_variable_attr(var, NULL, &len, owner, NULL);
+	if (EFI_ERROR(efi_status)) {
+		if (efi_status == EFI_BUFFER_TOO_SMALL) {
+			*lenp = len;
+			return EFI_SUCCESS;
+		} else if (efi_status == EFI_NOT_FOUND) {
+			*lenp = 0;
+			return EFI_SUCCESS;
+		}
+		return efi_status;
+	}
+	/*
+	 * who knows what this means, but...
+	 */
+	*lenp = len;
+	return efi_status;
+}
+
+EFI_STATUS
+set_variable(CHAR16 *var, EFI_GUID owner, UINT32 attributes,
+	     UINTN datasize, void *data)
+{
+	return gRT->SetVariable(var, &owner, attributes, datasize, data);
+}
+
+EFI_STATUS
+del_variable(CHAR16 *var, EFI_GUID owner)
+{
+	return set_variable(var, owner, 0, 0, "");
 }
 
 EFI_STATUS
@@ -254,7 +368,8 @@ find_in_esl(UINT8 *Data, UINTN DataSize, UINT8 *key, UINTN keylen)
 }
 
 EFI_STATUS
-find_in_variable_esl(CHAR16* var, EFI_GUID owner, UINT8 *key, UINTN keylen)
+find_in_variable_esl(const CHAR16 * const var, EFI_GUID owner, UINT8 *key,
+		     UINTN keylen)
 {
 	UINTN DataSize = 0;
 	UINT8 *Data = NULL;
@@ -305,7 +420,7 @@ variable_is_secureboot(void)
 }
 
 EFI_STATUS
-variable_enroll_hash(CHAR16 *var, EFI_GUID owner,
+variable_enroll_hash(const CHAR16 * const var, EFI_GUID owner,
 		     UINT8 hash[SHA256_DIGEST_SIZE])
 {
 	EFI_STATUS efi_status;
@@ -330,7 +445,7 @@ variable_enroll_hash(CHAR16 *var, EFI_GUID owner,
 		efi_status = SetSecureVariable(var, sig, sizeof(sig), owner,
 					       EFI_VARIABLE_APPEND_WRITE, 0);
 	else
-		efi_status = gRT->SetVariable(var, &owner,
+		efi_status = gRT->SetVariable((CHAR16 *)var, &owner,
 					      EFI_VARIABLE_NON_VOLATILE |
 					      EFI_VARIABLE_BOOTSERVICE_ACCESS |
 					      EFI_VARIABLE_APPEND_WRITE,

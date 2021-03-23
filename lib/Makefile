@@ -1,9 +1,45 @@
 TARGET = lib.a
 
-LIBFILES = simple_file.o guid.o console.o execute.o configtable.o shell.o variables.o security_policy.o
+LIBFILES_UNSORTED := $(foreach x,$(wildcard *.c),$(patsubst %.c,%.o,$(x)))
+LIBFILES := $(sort $(LIBFILES_UNSORTED))
 
-EFI_INCLUDES    = -I$(EFI_INCLUDE) -I$(EFI_INCLUDE)/$(ARCH) -I$(EFI_INCLUDE)/protocol -I$(TOPDIR)/../include \
-		  -I$(TOPDIR)/CryptLib/Include/openssl/
+CRYPTDIR	= $(TOPDIR)/Cryptlib
+
+INCLUDES	= $(EFI_INCLUDES) \
+		  -I$(TOPDIR)/include \
+		  -I$(CRYPTDIR)/Include/openssl/ \
+		  -I$(CRYPTDIR)/Include/ \
+		  -I$(CRYPTDIR) \
+		  -I$(TOPDIR) \
+		  -isystem $(TOPDIR)/include/system \
+		  -isystem $(shell $(CC) -print-file-name=include)
+
+CLANG_BUGS	= $(if $(findstring gcc,$(CC)),-maccumulate-outgoing-args,)
+
+ifeq ($(ARCH),x86_64)
+FEATUREFLAGS	+= -m64 -mno-mmx -mno-sse -mno-red-zone -nostdinc $(CLANG_BUGS)
+DEFINES		+= -DMDE_CPU_X64
+endif
+ifeq ($(ARCH),ia32)
+FEATUREFLAGS	+= -m32 -mno-mmx -mno-sse -mno-red-zone -nostdinc $(CLANG_BUGS)
+DEFINES		+= -DMDE_CPU_IA32
+endif
+ifeq ($(ARCH),aarch64)
+DEFINES		+= -DMDE_CPU_AARCH64
+endif
+ifeq ($(ARCH),arm)
+DEFINES		+= -DMDE_CPU_ARM
+endif
+
+LDFLAGS		= -nostdlib -znocombreloc
+
+
+CFLAGS		= $(FEATUREFLAGS) \
+		  $(OPTIMIZATIONS) \
+		  $(WARNFLAGS) \
+		  $(WERRFLAGS) \
+		  $(INCLUDES) \
+		  $(DEFINES)
 
 lib.a: $(LIBFILES)
 	$(AR) rcs lib.a $(LIBFILES)

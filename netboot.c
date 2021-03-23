@@ -1,32 +1,10 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 /*
  * netboot - trivial UEFI first-stage bootloader netboot support
  *
- * Copyright 2012 Red Hat, Inc <mjg@redhat.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Copyright Red Hat, Inc
+ * Author: Matthew Garrett
  *
  * Significant portions of this code are derived from Tianocore
  * (http://tianocore.sf.net) and are Copyright 2009-2012 Intel
@@ -34,8 +12,6 @@
  */
 
 #include "shim.h"
-
-#include <string.h>
 
 #define ntohs(x) __builtin_bswap16(x)	/* supported both by GCC and clang */
 #define htons(x) ntohs(x)
@@ -189,12 +165,14 @@ static BOOLEAN extract_tftp_info(CHAR8 *url)
 	CHAR8 *start, *end;
 	CHAR8 ip6str[40];
 	CHAR8 ip6inv[16];
-	CHAR8 *template = (CHAR8 *)translate_slashes(DEFAULT_LOADER_CHAR);
+	CHAR8 template[sizeof DEFAULT_LOADER_CHAR];
+
+	translate_slashes(template, DEFAULT_LOADER_CHAR);
 
 	// to check against str2ip6() errors
 	memset(ip6inv, 0, sizeof(ip6inv));
 
-	if (strncmp((UINT8 *)url, (UINT8 *)"tftp://", 7)) {
+	if (strncmp((const char *)url, (const char *)"tftp://", 7)) {
 		console_print(L"URLS MUST START WITH tftp://\n");
 		return FALSE;
 	}
@@ -254,9 +232,13 @@ static EFI_STATUS parseDhcp6()
 
 static EFI_STATUS parseDhcp4()
 {
-	CHAR8 *template = (CHAR8 *)translate_slashes(DEFAULT_LOADER_CHAR);
-	INTN template_len = strlen(template) + 1;
+	CHAR8 template[sizeof DEFAULT_LOADER_CHAR];
+	INTN template_len;
+	UINTN template_ofs = 0;
 	EFI_PXE_BASE_CODE_DHCPV4_PACKET* pkt_v4 = (EFI_PXE_BASE_CODE_DHCPV4_PACKET *)&pxe->Mode->DhcpAck.Dhcpv4;
+
+	translate_slashes(template, DEFAULT_LOADER_CHAR);
+	template_len = strlen(template) + 1;
 
 	if(pxe->Mode->ProxyOfferReceived) {
 		/*
@@ -267,7 +249,16 @@ static EFI_STATUS parseDhcp4()
 			pkt_v4 = &pxe->Mode->ProxyOffer.Dhcpv4;
 	}
 
-	INTN dir_len = strnlena(pkt_v4->BootpBootFile, 127);
+	if(pxe->Mode->PxeReplyReceived) {
+		/*
+		 * If we have no bootinfo yet search for it in the PxeReply.
+		 * Some mainboards run into this when the server uses boot menus
+		 */
+		if(pkt_v4->BootpBootFile[0] == '\0' && pxe->Mode->PxeReply.Dhcpv4.BootpBootFile[0] != '\0')
+			pkt_v4 = &pxe->Mode->PxeReply.Dhcpv4;
+	}
+
+	INTN dir_len = strnlen((CHAR8 *)pkt_v4->BootpBootFile, 127);
 	INTN i;
 	UINT8 *dir = pkt_v4->BootpBootFile;
 
@@ -283,19 +274,19 @@ static EFI_STATUS parseDhcp4()
 		return EFI_OUT_OF_RESOURCES;
 
 	if (dir_len > 0) {
-		strncpya(full_path, dir, dir_len);
+		strncpy(full_path, (CHAR8 *)dir, dir_len);
 		if (full_path[dir_len-1] == '/' && template[0] == '/')
 			full_path[dir_len-1] = '\0';
 	}
 	if (dir_len == 0 && dir[0] != '/' && template[0] == '/')
-		template++;
-	strcata(full_path, template);
+		template_ofs++;
+	strcat(full_path, template + template_ofs);
 	memcpy(&tftp_addr.v4, pkt_v4->BootpSiAddr, 4);
 
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle)
+EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle UNUSED)
 {
 
 	EFI_STATUS efi_status;
@@ -316,7 +307,7 @@ EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle)
 	return efi_status;
 }
 
-EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle, VOID **buffer, UINT64 *bufsiz)
+EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle UNUSED, VOID **buffer, UINT64 *bufsiz)
 {
 	EFI_STATUS efi_status;
 	EFI_PXE_BASE_CODE_TFTP_OPCODE read = EFI_PXE_BASE_CODE_TFTP_READ_FILE;
@@ -334,7 +325,7 @@ EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle, VOID **buffer, UINT64 *buf
 
 try_again:
 	efi_status = pxe->Mtftp(pxe, read, *buffer, overwrite, bufsiz, &blksz,
-			      &tftp_addr, full_path, NULL, nobuffer);
+			      &tftp_addr, (UINT8 *)full_path, NULL, nobuffer);
 	if (efi_status == EFI_BUFFER_TOO_SMALL) {
 		/* try again, doubling buf size */
 		*bufsiz *= 2;

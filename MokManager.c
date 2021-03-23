@@ -1,13 +1,11 @@
-#include <efi.h>
-#include <efilib.h>
-#include <stdarg.h>
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+#include "shim.h"
+
 #include <Library/BaseCryptLib.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
-
-#include "shim.h"
 
 #define PASSWORD_MAX 256
 #define PASSWORD_MIN 1
@@ -21,6 +19,8 @@
 
 #define CERT_STRING L"Select an X509 certificate to enroll:\n\n"
 #define HASH_STRING L"Select a file to trust:\n\n"
+
+#define CompareMemberGuid(x, y) CompareMem(x, y, sizeof(EFI_GUID))
 
 typedef struct {
 	UINT32 MokSize;
@@ -352,14 +352,14 @@ static void show_x509_info(X509 * X509Cert, UINT8 * hash)
 			fields++;
 	}
 
-	time = X509_getm_notBefore(X509Cert);
+	time = X509_get_notBefore(X509Cert);
 	if (time) {
 		from = get_x509_time(time);
 		if (from)
 			fields++;
 	}
 
-	time = X509_getm_notAfter(X509Cert);
+	time = X509_get_notAfter(X509Cert);
 	if (time) {
 		until = get_x509_time(time);
 		if (until)
@@ -733,30 +733,6 @@ done:
 	return efi_status;
 }
 
-static void console_save_and_set_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode)
-{
-	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
-
-	if (!SavedMode) {
-		console_print(L"Invalid parameter: SavedMode\n");
-		return;
-	}
-
-	CopyMem(SavedMode, co->Mode, sizeof(SIMPLE_TEXT_OUTPUT_MODE));
-	co->EnableCursor(co, FALSE);
-	co->SetAttribute(co, EFI_LIGHTGRAY | EFI_BACKGROUND_BLUE);
-}
-
-static void console_restore_mode(SIMPLE_TEXT_OUTPUT_MODE * SavedMode)
-{
-	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
-
-	co->EnableCursor(co, SavedMode->CursorVisible);
-	co->SetCursorPosition(co, SavedMode->CursorColumn,
-				SavedMode->CursorRow);
-	co->SetAttribute(co, SavedMode->Attribute);
-}
-
 static INTN reset_system()
 {
 	gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
@@ -1048,9 +1024,11 @@ static EFI_STATUS mok_reset_prompt(BOOLEAN MokX)
 	if (MokX) {
 		LibDeleteVariable(L"MokXNew", &SHIM_LOCK_GUID);
 		LibDeleteVariable(L"MokXAuth", &SHIM_LOCK_GUID);
+		LibDeleteVariable(L"MokListX", &SHIM_LOCK_GUID);
 	} else {
 		LibDeleteVariable(L"MokNew", &SHIM_LOCK_GUID);
 		LibDeleteVariable(L"MokAuth", &SHIM_LOCK_GUID);
+		LibDeleteVariable(L"MokList", &SHIM_LOCK_GUID);
 	}
 
 	return EFI_SUCCESS;
@@ -1062,6 +1040,7 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 	EFI_STATUS efi_status;
 	EFI_SIGNATURE_LIST *CertList;
 	EFI_SIGNATURE_DATA *CertData;
+	EFI_GUID type;
 	void *Data = NULL, *ptr;
 	INTN DataSize = 0;
 	int i;
@@ -1072,18 +1051,29 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 	else
 		db_name = L"MokList";
 
+	dprint(L"Writing back %s (%d entries)\n", db_name, key_num);
 	for (i = 0; i < key_num; i++) {
 		if (list[i].Mok == NULL)
 			continue;
 
 		DataSize += sizeof(EFI_SIGNATURE_LIST);
-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0)
+		type = list[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) == 0)
 			DataSize += sizeof(EFI_GUID);
 		DataSize += list[i].MokSize;
 	}
+	if (DataSize == 0) {
+		dprint(L"DataSize = 0; deleting variable %s\n", db_name);
+		efi_status = gRT->SetVariable(db_name, &SHIM_LOCK_GUID,
+					      EFI_VARIABLE_NON_VOLATILE |
+					      EFI_VARIABLE_BOOTSERVICE_ACCESS,
+					      DataSize, Data);
+		dprint(L"efi_status:%llu\n", efi_status);
+		return EFI_SUCCESS;
+	}
 
 	Data = AllocatePool(DataSize);
-	if (Data == NULL && DataSize != 0)
+	if (Data == NULL)
 		return EFI_OUT_OF_RESOURCES;
 
 	ptr = Data;
@@ -1099,7 +1089,7 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 		CertList->SignatureType = list[i].Type;
 		CertList->SignatureHeaderSize = 0;
 
-		if (CompareGuid(&(list[i].Type), &X509_GUID) == 0) {
+		if (CompareGuid(&(CertList->SignatureType), &X509_GUID) == 0) {
 			CertList->SignatureListSize = list[i].MokSize +
 			    sizeof(EFI_SIGNATURE_LIST) + sizeof(EFI_GUID);
 			CertList->SignatureSize =
@@ -1137,10 +1127,12 @@ static EFI_STATUS write_back_mok_list(MokListNode * list, INTN key_num,
 static void delete_cert(void *key, UINT32 key_size,
 			MokListNode * mok, INTN mok_num)
 {
+	EFI_GUID type;
 	int i;
 
 	for (i = 0; i < mok_num; i++) {
-		if (CompareGuid(&(mok[i].Type), &X509_GUID) != 0)
+		type = mok[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) != 0)
 			continue;
 
 		if (mok[i].MokSize == key_size &&
@@ -1182,6 +1174,7 @@ static void mem_move(void *dest, void *src, UINTN size)
 static void delete_hash_in_list(EFI_GUID Type, UINT8 * hash, UINT32 hash_size,
 				MokListNode * mok, INTN mok_num)
 {
+	EFI_GUID type;
 	UINT32 sig_size;
 	UINT32 list_num;
 	int i, del_ind;
@@ -1191,7 +1184,8 @@ static void delete_hash_in_list(EFI_GUID Type, UINT8 * hash, UINT32 hash_size,
 	sig_size = hash_size + sizeof(EFI_GUID);
 
 	for (i = 0; i < mok_num; i++) {
-		if ((CompareGuid(&(mok[i].Type), &Type) != 0) ||
+		type = mok[i].Type; /* avoid -Werror=address-of-packed-member */
+		if ((CompareGuid(&type, &Type) != 0) ||
 		    (mok[i].MokSize < sig_size))
 			continue;
 
@@ -1247,6 +1241,7 @@ static void delete_hash_list(EFI_GUID Type, void *hash_list, UINT32 list_size,
 static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 {
 	EFI_STATUS efi_status;
+	EFI_GUID type;
 	CHAR16 *db_name;
 	CHAR16 *auth_name;
 	CHAR16 *err_strs[] = { NULL, NULL, NULL };
@@ -1280,11 +1275,15 @@ static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 	}
 
 	if (auth_size == PASSWORD_CRYPT_SIZE) {
+		dprint(L"matching password with CRYPT");
 		efi_status = match_password((PASSWORD_CRYPT *) auth, NULL, 0,
 					    NULL, NULL);
+		dprint(L"match_password(0x%llx, NULL, 0, NULL, NULL) = %lu\n", auth, efi_status);
 	} else {
+		dprint(L"matching password as sha256sum");
 		efi_status =
 		    match_password(NULL, MokDel, MokDelSize, auth, NULL);
+		dprint(L"match_password(NULL, 0x%llx, %llu, 0x%llx, NULL) = %lu\n", MokDel, MokDelSize, auth, efi_status);
 	}
 	if (EFI_ERROR(efi_status))
 		return EFI_ACCESS_DENIED;
@@ -1354,11 +1353,17 @@ static EFI_STATUS delete_keys(void *MokDel, UINTN MokDelSize, BOOLEAN MokX)
 	}
 
 	/* Search and destroy */
+	dprint(L"deleting certs from %a\n", MokX ? "MokListX" : "MokList");
 	for (i = 0; i < del_num; i++) {
-		if (CompareGuid(&(del_key[i].Type), &X509_GUID) == 0) {
+		type = del_key[i].Type; /* avoid -Werror=address-of-packed-member */
+		if (CompareGuid(&type, &X509_GUID) == 0) {
+			dprint(L"deleting key %d (total %d):\n", i, mok_num);
+			dhexdumpat(del_key[i].Mok, del_key[i].MokSize, 0);
 			delete_cert(del_key[i].Mok, del_key[i].MokSize,
 				    mok, mok_num);
 		} else if (is_sha2_hash(del_key[i].Type)) {
+			dprint(L"deleting hash %d (total %d):\n", i, mok_num);
+			dhexdumpat(del_key[i].Mok, del_key[i].MokSize, 0);
 			delete_hash_list(del_key[i].Type, del_key[i].Mok,
 					 del_key[i].MokSize, mok, mok_num);
 		}
@@ -1421,7 +1426,7 @@ static CHAR16 get_password_charater(CHAR16 * prompt)
 	SIMPLE_TEXT_OUTPUT_MODE SavedMode;
 	EFI_STATUS efi_status;
 	CHAR16 *message[2];
-	CHAR16 character;
+	CHAR16 character = 0;
 	UINTN length;
 	UINT32 pw_length;
 
@@ -2032,24 +2037,17 @@ static BOOLEAN verify_pw(BOOLEAN * protected)
 
 static int draw_countdown()
 {
-	SIMPLE_TEXT_OUTPUT_INTERFACE *co = ST->ConOut;
-	SIMPLE_INPUT_INTERFACE *ci = ST->ConIn;
-	SIMPLE_TEXT_OUTPUT_MODE SavedMode;
-	EFI_INPUT_KEY key;
-	EFI_STATUS efi_status;
-	UINTN cols, rows;
-	CHAR16 *title[2];
 	CHAR16 *message = L"Press any key to perform MOK management";
+	CHAR16 *title;
 	void *MokTimeout = NULL;
 	MokTimeoutvar *var;
 	UINTN MokTimeoutSize = 0;
-	int timeout, wait = 10000000;
+	int timeout = 10;
+	EFI_STATUS efi_status;
 
 	efi_status = get_variable(L"MokTimeout", (UINT8 **) &MokTimeout,
 				  &MokTimeoutSize, SHIM_LOCK_GUID);
-	if (EFI_ERROR(efi_status)) {
-		timeout = 10;
-	} else {
+	if (!EFI_ERROR(efi_status)) {
 		var = MokTimeout;
 		timeout = (int)var->Timeout;
 		FreePool(MokTimeout);
@@ -2059,42 +2057,10 @@ static int draw_countdown()
 	if (timeout < 0)
 		return timeout;
 
-	console_save_and_set_mode(&SavedMode);
+	title = PoolPrint(L"%s UEFI key management", SHIM_VENDOR);
+	timeout = console_countdown(title, message, timeout);
 
-	title[0] = PoolPrint(L"%s UEFI key management", SHIM_VENDOR);
-	title[1] = NULL;
-
-	console_print_box_at(title, -1, 0, 0, -1, -1, 1, 1);
-
-	co->QueryMode(co, co->Mode->Mode, &cols, &rows);
-
-	console_print_at((cols - StrLen(message)) / 2, rows / 2, message);
-	while (1) {
-		if (timeout > 1)
-			console_print_at(2, rows - 3,
-					 L"Booting in %d seconds  ",
-					 timeout);
-		else if (timeout)
-			console_print_at(2, rows - 3,
-					 L"Booting in %d second   ",
-					 timeout);
-
-		efi_status = WaitForSingleEvent(ci->WaitForKey, wait);
-		if (efi_status != EFI_TIMEOUT) {
-			/* Clear the key in the queue */
-			ci->ReadKeyStroke(ci, &key);
-			break;
-		}
-
-		timeout--;
-		if (!timeout)
-			break;
-	}
-
-	FreePool(title[0]);
-
-	console_restore_mode(&SavedMode);
-
+	FreePool(title);
 	return timeout;
 }
 
@@ -2122,7 +2088,7 @@ static void free_menu(mok_menu_item * menu_item, CHAR16 ** menu_strings)
 		FreePool(menu_item);
 }
 
-static EFI_STATUS enter_mok_menu(EFI_HANDLE image_handle,
+static EFI_STATUS enter_mok_menu(EFI_HANDLE image_handle UNUSED,
 				 void *MokNew, UINTN MokNewSize,
 				 void *MokDel, UINTN MokDelSize,
 				 void *MokSB, UINTN MokSBSize,
@@ -2552,7 +2518,10 @@ EFI_STATUS efi_main(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE * systab)
 
 	InitializeLib(image_handle, systab);
 
+	setup_verbosity();
 	setup_rand();
+
+	console_mode_handle();
 
 	efi_status = check_mok_request(image_handle);
 

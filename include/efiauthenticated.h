@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #ifndef SHIM_EFIAUTHENTICATED_H
 #define SHIM_EFIAUTHENTICATED_H
 
-#include <wincert.h>
+#include "wincert.h"
 
 /***********************************************************************
  * Signature Database

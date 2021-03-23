@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 #ifndef SHIM_GUID_H
 #define SHIM_GUID_H
-
-#include <efi.h>
 
 extern EFI_GUID BDS_GUID;
 extern EFI_GUID GV_GUID;
@@ -34,5 +34,7 @@ extern EFI_GUID EFI_SIMPLE_FILE_SYSTEM_GUID;
 extern EFI_GUID SECURITY_PROTOCOL_GUID;
 extern EFI_GUID SECURITY2_PROTOCOL_GUID;
 extern EFI_GUID SHIM_LOCK_GUID;
+
+extern EFI_GUID MOK_VARIABLE_STORE;
 
 #endif /* SHIM_GUID_H */
