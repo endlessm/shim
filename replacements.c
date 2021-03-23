@@ -18,11 +18,6 @@
  *      National Security Policy and Scientific Developments, November 20,
  *      1969.
  */
-
-#include <efi.h>
-#include <efiapi.h>
-#include <efilib.h>
-
 #include "shim.h"
 
 static EFI_SYSTEM_TABLE *systab;
@@ -132,6 +127,8 @@ do_exit(EFI_HANDLE ImageHandle, EFI_STATUS ExitStatus,
 	EFI_STATUS efi_status;
 
 	shim_fini();
+
+	restore_loaded_image();
 
 	efi_status = gBS->Exit(ImageHandle, ExitStatus,
 			       ExitDataSize, ExitData);

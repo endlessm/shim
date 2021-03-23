@@ -17,9 +17,9 @@
 
 EFI_STATUS
 console_get_keystroke(EFI_INPUT_KEY *key);
-UINTN
+UINTN EFIAPI
 console_print(const CHAR16 *fmt, ...);
-UINTN
+UINTN EFIAPI
 console_print_at(UINTN col, UINTN row, const CHAR16 *fmt, ...);
 void
 console_print_box_at(CHAR16 *str_arr[], int highlight,
@@ -92,6 +92,7 @@ struct _EFI_CONSOLE_CONTROL_PROTOCOL {
 extern VOID console_fini(VOID);
 extern VOID setup_verbosity(VOID);
 extern UINT32 verbose;
+#ifndef SHIM_UNIT_TEST
 #define dprint_(fmt, ...) ({							\
 		UINTN __dprint_ret = 0;						\
 		if (verbose)							\
@@ -101,8 +102,13 @@ extern UINT32 verbose;
 #define dprint(fmt, ...)                                              \
 	dprint_(L"%a:%d:%a() " fmt, __FILE__, __LINE__ - 1, __func__, \
 	        ##__VA_ARGS__)
-extern EFI_STATUS
-vdprint_(const CHAR16 *fmt, const char *file, int line, const char *func, va_list args);
+#else
+#define dprint_(...)
+#define dprint(fmt, ...)
+#endif
+
+extern EFI_STATUS EFIAPI vdprint_(const CHAR16 *fmt, const char *file, int line,
+                                  const char *func, ms_va_list args);
 #define vdprint(fmt, ...) \
 	vdprint_(fmt, __FILE__, __LINE__ - 1, __func__, ##__VA_ARGS__)
 

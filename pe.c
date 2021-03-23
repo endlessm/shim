@@ -5,7 +5,6 @@
  */
 
 #include "shim.h"
-#include "hexdump.h"
 
 #include <openssl/err.h>
 #include <openssl/bn.h>
@@ -188,7 +187,7 @@ relocate_coff (PE_COFF_LOADER_IMAGE_CONTEXT *context,
 
 EFI_STATUS
 get_section_vma (UINTN section_num,
-		 char *buffer, size_t bufsz,
+		 char *buffer, size_t bufsz UNUSED,
 		 PE_COFF_LOADER_IMAGE_CONTEXT *context,
 		 char **basep, size_t *sizep,
 		 EFI_IMAGE_SECTION_HEADER **sectionp)
@@ -829,7 +828,7 @@ handle_sbat(char *SBATBase, size_t SBATSize)
 	unsigned int i;
 	EFI_STATUS efi_status;
 	size_t n;
-	struct sbat_entry **entries = NULL;
+	struct sbat_section_entry **entries = NULL;
 	char *sbat_data;
 	size_t sbat_size;
 
@@ -850,7 +849,7 @@ handle_sbat(char *SBATBase, size_t SBATSize)
 	CopyMem(sbat_data, SBATBase, SBATSize);
 	sbat_data[SBATSize] = '\0';
 
-	efi_status = parse_sbat(sbat_data, sbat_size, &n, &entries);
+	efi_status = parse_sbat_section(sbat_data, sbat_size, &n, &entries);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Could not parse .sbat section data: %r\n", efi_status);
 		goto err;
@@ -869,7 +868,7 @@ handle_sbat(char *SBATBase, size_t SBATSize)
 
 	efi_status = verify_sbat(n, entries);
 
-	cleanup_sbat_entries(n, entries);
+	cleanup_sbat_section_entries(n, entries);
 
 err:
 	FreePool(sbat_data);
@@ -1033,7 +1032,7 @@ handle_image (void *data, unsigned int datasize,
 			}
 		} else if (CompareMem(Section->Name, ".sbat\0\0\0", 8) == 0) {
 			if (SBATBase || SBATSize) {
-				perror(L"Image has multiple resource sections\n");
+				perror(L"Image has multiple SBAT sections\n");
 				return EFI_UNSUPPORTED;
 			}
 
@@ -1043,10 +1042,14 @@ handle_image (void *data, unsigned int datasize,
 				return EFI_UNSUPPORTED;
 			}
 
-			/* If it has nonzero size, and our bounds check made
-			 * sense, sizes match, then we believe it's okay. */
+			/* The virtual size corresponds to the size of the SBAT
+			 * metadata and isn't necessarily a multiple of the file
+			 * alignment. The on-disk size is a multiple of the file
+			 * alignment and is zero padded. Make sure that the
+			 * on-disk size is at least as large as virtual size,
+			 * and ignore the section if it isn't. */
 			if (Section->SizeOfRawData &&
-			    Section->SizeOfRawData == Section->Misc.VirtualSize &&
+			    Section->SizeOfRawData >= Section->Misc.VirtualSize &&
 			    base && end) {
 				SBATBase = base;
 				/* +1 because of size vs last byte location */

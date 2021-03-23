@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
+#include "shim.h"
 
-#include <efi.h>
-#include <efilib.h>
-#include <stdarg.h>
 #include <Library/BaseCryptLib.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
-
-#include "shim.h"
-
-#include "hexdump.h"
 
 #define PASSWORD_MAX 256
 #define PASSWORD_MIN 1
@@ -2094,7 +2088,7 @@ static void free_menu(mok_menu_item * menu_item, CHAR16 ** menu_strings)
 		FreePool(menu_item);
 }
 
-static EFI_STATUS enter_mok_menu(EFI_HANDLE image_handle,
+static EFI_STATUS enter_mok_menu(EFI_HANDLE image_handle UNUSED,
 				 void *MokNew, UINTN MokNewSize,
 				 void *MokDel, UINTN MokDelSize,
 				 void *MokSB, UINTN MokSBSize,

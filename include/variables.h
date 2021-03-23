@@ -40,6 +40,12 @@ get_variable(const CHAR16 * const var, UINT8 **data, UINTN *len, EFI_GUID owner)
 EFI_STATUS
 get_variable_attr(const CHAR16 * const var, UINT8 **data, UINTN *len, EFI_GUID owner, UINT32 *attributes);
 EFI_STATUS
+get_variable_size(const CHAR16 * const var, EFI_GUID owner, UINTN *lenp);
+EFI_STATUS
+set_variable(CHAR16 *var, EFI_GUID owner, UINT32 attributes, UINTN datasize, void *data);
+EFI_STATUS
+del_variable(CHAR16 *var, EFI_GUID owner);
+EFI_STATUS
 find_in_esl(UINT8 *Data, UINTN DataSize, UINT8 *key, UINTN keylen);
 EFI_STATUS
 find_in_variable_esl(const CHAR16 * const var, EFI_GUID owner, UINT8 *key, UINTN keylen);
@@ -58,12 +64,20 @@ EFI_STATUS
 variable_enroll_hash(const CHAR16 * const var, EFI_GUID owner,
 		     UINT8 hash[SHA256_DIGEST_SIZE]);
 EFI_STATUS
-variable_create_esl(const uint8_t *cert, const size_t cert_len,
-		    const EFI_GUID *type, const EFI_GUID *owner,
+variable_create_esl(const EFI_SIGNATURE_DATA *first_sig, const size_t howmany,
+		    const EFI_GUID *type, const UINT32 sig_size,
 		    uint8_t **out, size_t *outlen);
 EFI_STATUS
-fill_esl(const uint8_t *data, const size_t data_len,
-	 const EFI_GUID *type, const EFI_GUID *owner,
+variable_create_esl_with_one_signature(const uint8_t* data, const size_t data_len,
+				       const EFI_GUID *type, const EFI_GUID *owner,
+				       uint8_t **out, size_t *outlen);
+EFI_STATUS
+fill_esl(const EFI_SIGNATURE_DATA *first_sig, const size_t howmany,
+	 const EFI_GUID *type, const UINT32 sig_size,
 	 uint8_t *out, size_t *outlen);
+EFI_STATUS
+fill_esl_with_one_signature(const uint8_t *data, const uint32_t data_len,
+			    const EFI_GUID *type, const EFI_GUID *owner,
+			    uint8_t *out, size_t *outlen);
 
 #endif /* SHIM_VARIABLES_H */

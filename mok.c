@@ -6,10 +6,6 @@
 
 #include "shim.h"
 
-#include <stdint.h>
-
-#include "hexdump.h"
-
 /*
  * Check if a variable exists
  */
@@ -78,29 +74,66 @@ typedef vendor_addend_category_t (vendor_addend_categorizer_t)(struct mok_state_
  * tpm as well.
  */
 struct mok_state_variable {
-	CHAR16 *name;
-	char *name8;
-	CHAR16 *rtname;
-	char *rtname8;
-	EFI_GUID *guid;
+	CHAR16 *name;	/* UCS-2 BS|NV variable name */
+	char *name8;	/* UTF-8 BS|NV variable name */
+	CHAR16 *rtname;	/* UCS-2 RT variable name */
+	char *rtname8;	/* UTF-8 RT variable name */
+	EFI_GUID *guid;	/* variable GUID */
 
+	/*
+	 * these are used during processing, they shouldn't be filled out
+	 * in the static table below.
+	 */
 	UINT8 *data;
 	UINTN data_size;
 
 	/*
+	 * addend are added to the input variable, as part of the runtime
+	 * variable, so that they're visible to the kernel.  These are
+	 * where we put vendor_cert / vendor_db / vendor_dbx
+	 *
 	 * These are indirect pointers just to make initialization saner...
 	 */
-	vendor_addend_categorizer_t *categorize_addend;
+	vendor_addend_categorizer_t *categorize_addend; /* determines format */
+	/*
+	 * we call categorize_addend() and it determines what kind of thing
+	 * this is.  That is, if this shim was built with VENDOR_CERT, for
+	 * the DB entry it'll return VENDOR_ADDEND_X509; if you used
+	 * VENDOR_DB instead, it'll return VENDOR_ADDEND_DB.  If you used
+	 * neither, it'll do VENDOR_ADDEND_NONE.
+	 *
+	 * The existing categorizers are for db and dbx; they differ
+	 * because we don't currently support a CERT for dbx.
+	 */
 	UINT8 **addend;
 	UINT32 *addend_size;
 
+	/*
+	 * build_cert is our build-time cert.  Like addend, this is added
+	 * to the input variable, as part of the runtime variable, so that
+	 * they're visible to the kernel.  This is the ephemeral cert used
+	 * for signing MokManager.efi and fallback.efi.
+	 *
+	 * These are indirect pointers just to make initialization saner...
+	 */
 	UINT8 **build_cert;
 	UINT32 *build_cert_size;
 
-	UINT32 yes_attr;
-	UINT32 no_attr;
-	UINT32 flags;
-	UINTN pcr;
+	UINT32 yes_attr;	/* var attrs that must be set */
+	UINT32 no_attr;		/* var attrs that must not be set */
+	UINT32 flags;		/* flags on what and how to mirror */
+	/*
+	 * MOK_MIRROR_KEYDB	    mirror this as a key database
+	 * MOK_MIRROR_DELETE_FIRST  delete any existing variable first
+	 * MOK_VARIABLE_MEASURE	    extend PCR 7 and log the hash change
+	 * MOK_VARIABLE_LOG	    measure into whatever .pcr says and log
+	 */
+	UINTN pcr;		/* PCR to measure and hash to */
+
+	/*
+	 * if this is a state value, a pointer to our internal state to be
+	 * mirrored.
+	 */
 	UINT8 *state;
 };
 
@@ -192,12 +225,32 @@ struct mok_state_variable mok_state_variables[] = {
 	 .no_attr = EFI_VARIABLE_RUNTIME_ACCESS,
 	 .state = &ignore_db,
 	},
+	{.name = SBAT_VAR_NAME,
+	 .name8 = SBAT_VAR_NAME8,
+	 .rtname = SBAT_RT_VAR_NAME,
+	 .rtname8 = SBAT_RT_VAR_NAME8,
+	 .guid = &SHIM_LOCK_GUID,
+	 .yes_attr = EFI_VARIABLE_BOOTSERVICE_ACCESS |
+		     EFI_VARIABLE_NON_VOLATILE,
+	 /*
+	  * we're enforcing that SBAT can't have an RT flag here because
+	  * there's no way to tell whether it's an authenticated variable.
+	  */
+#if !defined(ENABLE_SHIM_DEVEL)
+	 .no_attr = EFI_VARIABLE_RUNTIME_ACCESS,
+#else
+	 .no_attr = 0,
+#endif
+	 .flags = MOK_MIRROR_DELETE_FIRST |
+		  MOK_VARIABLE_MEASURE,
+	 .pcr = 7,
+	},
 	{ NULL, }
 };
 
 #define should_mirror_addend(v) (((v)->categorize_addend) && ((v)->categorize_addend(v) != VENDOR_ADDEND_NONE))
 
-static inline BOOLEAN nonnull(1)
+static inline BOOLEAN NONNULL(1)
 should_mirror_build_cert(struct mok_state_variable *v)
 {
 	return (v->build_cert && v->build_cert_size &&
@@ -247,24 +300,16 @@ get_max_var_sz(UINT32 attrs, SIZE_T *max_var_szp)
 static EFI_STATUS
 mirror_one_esl(CHAR16 *name, EFI_GUID *guid, UINT32 attrs,
 	       EFI_SIGNATURE_LIST *esl, EFI_SIGNATURE_DATA *esd,
-	       UINTN *newsz, SIZE_T maxsz)
+	       SIZE_T howmany)
 {
 	EFI_STATUS efi_status;
-	SIZE_T howmany, varsz = 0, esdsz;
-	UINT8 *var, *data;
-
-	howmany = MIN((maxsz - sizeof(*esl)) / esl->SignatureSize,
-		      (esl->SignatureListSize - sizeof(*esl)) / esl->SignatureSize);
-	if (howmany < 1) {
-		return EFI_BUFFER_TOO_SMALL;
-	}
+	SIZE_T varsz = 0;
+	UINT8 *var;
 
 	/*
 	 * We always assume esl->SignatureHeaderSize is 0 (and so far,
 	 * that's true as per UEFI 2.8)
 	 */
-	esdsz = howmany * esl->SignatureSize;
-	data = (UINT8 *)esd;
 	dprint(L"Trying to add %lx signatures to \"%s\" of size %lx\n",
 	       howmany, name, esl->SignatureSize);
 
@@ -274,10 +319,9 @@ mirror_one_esl(CHAR16 *name, EFI_GUID *guid, UINT32 attrs,
 	 *
 	 * Compensate here.
 	 */
-	efi_status = variable_create_esl(data + sizeof(EFI_GUID),
-					 esdsz - sizeof(EFI_GUID),
+	efi_status = variable_create_esl(esd, howmany,
 					 &esl->SignatureType,
-					 &esd->SignatureOwner,
+					 esl->SignatureSize,
 					 &var, &varsz);
 	if (EFI_ERROR(efi_status) || !var || !varsz) {
 		LogError(L"Couldn't allocate %lu bytes for mok variable \"%s\": %r\n",
@@ -296,8 +340,6 @@ mirror_one_esl(CHAR16 *name, EFI_GUID *guid, UINT32 attrs,
 		return efi_status;
 	}
 
-	*newsz = esdsz;
-
 	return efi_status;
 }
 
@@ -308,19 +350,19 @@ mirror_mok_db(CHAR16 *name, CHAR8 *name8, EFI_GUID *guid, UINT32 attrs,
 	EFI_STATUS efi_status = EFI_SUCCESS;
 	SIZE_T max_var_sz;
 
-	if (only_first) {
-		efi_status = get_max_var_sz(attrs, &max_var_sz);
-		if (EFI_ERROR(efi_status)) {
-			LogError(L"Could not get maximum variable size: %r",
-				 efi_status);
-			return efi_status;
-		}
+	efi_status = get_max_var_sz(attrs, &max_var_sz);
+	if (EFI_ERROR(efi_status)) {
+		LogError(L"Could not get maximum variable size: %r",
+			 efi_status);
+		return efi_status;
+	}
 
-		if (FullDataSize <= max_var_sz) {
+	if (FullDataSize <= max_var_sz) {
+		if (only_first)
 			efi_status = SetVariable(name, guid, attrs,
 						 FullDataSize, FullData);
-			return efi_status;
-		}
+
+		return efi_status;
 	}
 
 	CHAR16 *namen;
@@ -409,12 +451,25 @@ mirror_mok_db(CHAR16 *name, CHAR8 *name8, EFI_GUID *guid, UINT32 attrs,
 			return efi_status;
 		}
 
+		/* The name counts towards the size of the variable */
+		max_var_sz -= (StrLen(namen) + 1) * 2;
+		dprint(L"max_var_sz - name: %lx\n", max_var_sz);
+
 		SIZE_T howmany;
-		UINTN adj = 0;
 		howmany = MIN((max_var_sz - sizeof(*esl)) / esl->SignatureSize,
-			      (esl->SignatureListSize - sizeof(*esl)) / esl->SignatureSize);
-		if (!only_first && i == 0 && howmany >= 1) {
-			adj = howmany * esl->SignatureSize;
+			      (esl_end_pos - pos) / esl->SignatureSize);
+		if (howmany == 0) {
+			/* No signatures from this ESL can be mirrored in to a
+			 * single variable, so skip it.
+			 */
+			dprint(L"skipping esl, pos:0x%llx->0x%llx\n", pos, esl_end_pos);
+			pos = esl_end_pos;
+			continue;
+		}
+
+		UINTN adj = howmany * esl->SignatureSize;
+
+		if (!only_first && i == 0) {
 			dprint(L"pos:0x%llx->0x%llx\n", pos, pos + adj);
 			pos += adj;
 			i++;
@@ -423,25 +478,25 @@ mirror_mok_db(CHAR16 *name, CHAR8 *name8, EFI_GUID *guid, UINT32 attrs,
 		}
 
 		efi_status = mirror_one_esl(namen, guid, attrs,
-					    esl, esd, &adj, max_var_sz);
+					    esl, esd, howmany);
 		dprint(L"esd:0x%llx adj:0x%llx\n", esd, adj);
-		if (EFI_ERROR(efi_status) && efi_status != EFI_BUFFER_TOO_SMALL) {
+		if (EFI_ERROR(efi_status)) {
 			LogError(L"Could not mirror mok variable \"%s\": %r\n",
 				 namen, efi_status);
 			break;
 		}
 
-		if (!EFI_ERROR(efi_status)) {
-			did_one = TRUE;
-			if (only_first)
-				break;
-			dprint(L"pos:0x%llx->0x%llx\n", pos, pos + adj);
-			pos += adj;
-			i++;
-		}
+		dprint(L"pos:0x%llx->0x%llx\n", pos, pos + adj);
+		pos += adj;
+		did_one = TRUE;
+		if (only_first)
+			break;
+		i++;
 	}
 
-	if (only_first && !did_one) {
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Failed to set %s: %r\n", name, efi_status);
+	} else if (only_first && !did_one) {
 		/*
 		 * In this case we're going to try to create a
 		 * dummy variable so that there's one there.  It
@@ -454,7 +509,7 @@ mirror_mok_db(CHAR16 *name, CHAR8 *name8, EFI_GUID *guid, UINT32 attrs,
 		UINT8 *var;
 		UINTN varsz;
 
-		efi_status = variable_create_esl(
+		efi_status = variable_create_esl_with_one_signature(
 				null_sha256, sizeof(null_sha256),
 				&EFI_CERT_SHA256_GUID, &SHIM_LOCK_GUID,
 				&var, &varsz);
@@ -463,21 +518,18 @@ mirror_mok_db(CHAR16 *name, CHAR8 *name8, EFI_GUID *guid, UINT32 attrs,
 		 * doesn't.
 		 */
 		if (!EFI_ERROR(efi_status) && var && varsz) {
-			SetVariable(name, guid,
+			efi_status = SetVariable(name, guid,
 				    EFI_VARIABLE_BOOTSERVICE_ACCESS
 				    | EFI_VARIABLE_RUNTIME_ACCESS,
 				    varsz, var);
 			FreePool(var);
 		}
-		efi_status = EFI_INVALID_PARAMETER;
-	} else if (EFI_ERROR(efi_status)) {
-		perror(L"Failed to set %s: %r\n", name, efi_status);
 	}
 	return efi_status;
 }
 
 
-static EFI_STATUS nonnull(1)
+static EFI_STATUS NONNULL(1)
 mirror_one_mok_variable(struct mok_state_variable *v,
 			BOOLEAN only_first)
 {
@@ -539,10 +591,12 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 			       FullDataSize, FullData);
 			break;
 		case VENDOR_ADDEND_X509:
-			efi_status = fill_esl(*v->addend, *v->addend_size,
-					      &EFI_CERT_TYPE_X509_GUID,
-					      &SHIM_LOCK_GUID,
-					      NULL, &addend_esl_sz);
+			efi_status = fill_esl_with_one_signature(*v->addend,
+								 *v->addend_size,
+								 &EFI_CERT_TYPE_X509_GUID,
+								 &SHIM_LOCK_GUID,
+								 NULL,
+								 &addend_esl_sz);
 			if (efi_status != EFI_BUFFER_TOO_SMALL) {
 				perror(L"Could not add built-in cert to %s: %r\n",
 				       v->name, efi_status);
@@ -563,11 +617,11 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 		 * then the build cert if it's there
 		 */
 		if (should_mirror_build_cert(v)) {
-			efi_status = fill_esl(*v->build_cert,
-					      *v->build_cert_size,
-					      &EFI_CERT_TYPE_X509_GUID,
-					      &SHIM_LOCK_GUID,
-					      NULL, &build_cert_esl_sz);
+			efi_status = fill_esl_with_one_signature(*v->build_cert,
+								 *v->build_cert_size,
+								 &EFI_CERT_TYPE_X509_GUID,
+								 &SHIM_LOCK_GUID,
+								 NULL, &build_cert_esl_sz);
 			if (efi_status != EFI_BUFFER_TOO_SMALL) {
 				perror(L"Could not add built-in cert to %s: %r\n",
 				       v->name, efi_status);
@@ -650,10 +704,11 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 			       FullDataSize, FullData, p, p-(uintptr_t)FullData);
 			break;
 		case VENDOR_ADDEND_X509:
-			efi_status = fill_esl(*v->addend, *v->addend_size,
-					      &EFI_CERT_TYPE_X509_GUID,
-					      &SHIM_LOCK_GUID,
-					      p, &addend_esl_sz);
+			efi_status = fill_esl_with_one_signature(*v->addend,
+								 *v->addend_size,
+								 &EFI_CERT_TYPE_X509_GUID,
+								 &SHIM_LOCK_GUID,
+								 p, &addend_esl_sz);
 			if (EFI_ERROR(efi_status)) {
 				perror(L"Could not add built-in cert to %s: %r\n",
 				       v->name, efi_status);
@@ -676,11 +731,11 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 		dprint(L"FullDataSize:%lu FullData:0x%llx p:0x%llx pos:%lld\n",
 		       FullDataSize, FullData, p, p-(uintptr_t)FullData);
 		if (should_mirror_build_cert(v)) {
-			efi_status = fill_esl(*v->build_cert,
-					      *v->build_cert_size,
-					      &EFI_CERT_TYPE_X509_GUID,
-					      &SHIM_LOCK_GUID,
-					      p, &build_cert_esl_sz);
+			efi_status = fill_esl_with_one_signature(*v->build_cert,
+								 *v->build_cert_size,
+								 &EFI_CERT_TYPE_X509_GUID,
+								 &SHIM_LOCK_GUID,
+								 p, &build_cert_esl_sz);
 			if (EFI_ERROR(efi_status)) {
 				perror(L"Could not add built-in cert to %s: %r\n",
 				       v->name, efi_status);
@@ -712,7 +767,7 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 	 * need a dummy entry
 	 */
 	if ((v->flags & MOK_MIRROR_KEYDB) && FullDataSize == 0) {
-		efi_status = variable_create_esl(
+		efi_status = variable_create_esl_with_one_signature(
 				null_sha256, sizeof(null_sha256),
 				&EFI_CERT_SHA256_GUID, &SHIM_LOCK_GUID,
 				&FullData, &FullDataSize);
@@ -787,7 +842,7 @@ mirror_one_mok_variable(struct mok_state_variable *v,
  * Mirror a variable if it has an rtname, and preserve any
  * EFI_SECURITY_VIOLATION status at the same time.
  */
-static EFI_STATUS nonnull(1)
+static EFI_STATUS NONNULL(1)
 maybe_mirror_one_mok_variable(struct mok_state_variable *v,
 			      EFI_STATUS ret, BOOLEAN only_first)
 {
@@ -964,7 +1019,7 @@ EFI_STATUS import_mok_state(EFI_HANDLE image_handle)
 		struct mok_state_variable *v = &mok_state_variables[i];
 
 		ZeroMem(&config_template, sizeof(config_template));
-		strncpya(config_template.name, (CHAR8 *)v->rtname8, 255);
+		strncpy(config_template.name, (CHAR8 *)v->rtname8, 255);
 		config_template.name[255] = '\0';
 
 		config_template.data_size = v->data_size;

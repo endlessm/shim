@@ -3,6 +3,10 @@
 #ifndef SHIM_H_
 #define SHIM_H_
 
+#ifdef SHIM_UNIT_TEST
+#define _GNU_SOURCE
+#endif
+
 #if defined __GNUC__ && defined __GNUC_MINOR__
 # define GNUC_PREREQ(maj, min) \
         ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
@@ -17,23 +21,48 @@
 #endif
 
 #if defined(__x86_64__)
-#if !defined(GNU_EFI_USE_MS_ABI)
-#error On x86_64 you must use ms_abi (GNU_EFI_USE_MS_ABI) in gnu-efi and shim.
-#endif
 /* gcc 4.5.4 is the first documented release with -mabi=ms */
+/* gcc 4.7.1 is the first one with __builtin_ms_va_list */
 #if !GNUC_PREREQ(4, 7) && !CLANG_PREREQ(3, 4)
 #error On x86_64 you must have a compiler new enough to support __attribute__((__ms_abi__))
 #endif
+
+#if !defined(GNU_EFI_USE_EXTERNAL_STDARG)
+#define GNU_EFI_USE_EXTERNAL_STDARG
 #endif
 
+#if !defined(GNU_EFI_USE_MS_ABI)
+#define GNU_EFI_USE_MS_ABI
+#endif
+
+#ifdef NO_BUILTIN_VA_FUNCS
+#undef NO_BUILTIN_VA_FUNCS
+#endif
+#endif
+
+#include <ctype.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdarg.h>
+#include <string.h>
+#include <strings.h>
+
+#ifndef SHIM_UNIT_TEST
 #include <efi.h>
 #include <efilib.h>
 #undef uefi_call_wrapper
+#include <efierr.h>
+#include <efiip.h>
 
-#include <stddef.h>
-#include <stdint.h>
+#if defined(__x86_64__) && !defined(HAVE_USE_MS_ABI)
+#error something has gone wrong with the gnu-efi includes and defines
+#endif
+#endif
 
-#define nonnull(...) __attribute__((__nonnull__(__VA_ARGS__)))
+#ifdef SHIM_UNIT_TEST
+#include "include/test.h"
+#endif
 
 #ifdef __x86_64__
 #ifndef DEFAULT_LOADER
@@ -95,6 +124,10 @@
 #endif
 #endif
 
+#ifndef DEBUGSRC
+#define DEBUGSRC L"/usr/src/debug/shim-" VERSIONSTR "." EFI_ARCH
+#endif
+
 #define FALLBACK L"\\fb" EFI_ARCH L".efi"
 #define MOK_MANAGER L"\\mm" EFI_ARCH L".efi"
 
@@ -148,9 +181,13 @@
 #include "include/tpm.h"
 #include "include/ucs2.h"
 #include "include/variables.h"
-#include "include/sbat.h"
+#include "include/hexdump.h"
 
 #include "version.h"
+
+#ifndef SHIM_UNIT_TEST
+#include "Cryptlib/Include/OpenSslSupport.h"
+#endif
 
 INTERFACE_DECL(_SHIM_LOCK);
 
@@ -187,11 +224,15 @@ typedef struct _SHIM_LOCK {
 
 extern EFI_STATUS shim_init(void);
 extern void shim_fini(void);
-extern EFI_STATUS LogError_(const char *file, int line, const char *func, const CHAR16 *fmt, ...);
-extern EFI_STATUS VLogError(const char *file, int line, const char *func, const CHAR16 *fmt, va_list args);
-extern VOID LogHexdump_(const char *file, int line, const char *func, const void *data, size_t sz);
+extern EFI_STATUS EFIAPI LogError_(const char *file, int line, const char *func,
+                                   const CHAR16 *fmt, ...);
+extern EFI_STATUS EFIAPI VLogError(const char *file, int line, const char *func,
+                                   const CHAR16 *fmt, ms_va_list args);
+extern VOID LogHexdump_(const char *file, int line, const char *func,
+                        const void *data, size_t sz);
 extern VOID PrintErrors(VOID);
 extern VOID ClearErrors(VOID);
+extern VOID restore_loaded_image(VOID);
 extern EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath);
 extern EFI_STATUS import_mok_state(EFI_HANDLE image_handle);
 
@@ -219,6 +260,7 @@ verify_buffer (char *data, int datasize,
 	       PE_COFF_LOADER_IMAGE_CONTEXT *context,
 	       UINT8 *sha256hash, UINT8 *sha1hash);
 
+#ifndef SHIM_UNIT_TEST
 #define perror_(file, line, func, fmt, ...) ({					\
 		UINTN __perror_ret = 0;						\
 		if (!in_protocol)						\
@@ -230,5 +272,11 @@ verify_buffer (char *data, int datasize,
 	perror_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
 #define LogError(fmt, ...) \
 	LogError_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
+#else
+#define perror(fmt, ...)
+#define LogError(fmt, ...)
+#endif
+
+char *translate_slashes(char *out, const char *str);
 
 #endif /* SHIM_H_ */

@@ -12,7 +12,6 @@
  */
 
 #include "shim.h"
-#include "hexdump.h"
 #if defined(ENABLE_SHIM_CERT)
 #include "shim_cert.h"
 #endif /* defined(ENABLE_SHIM_CERT) */
@@ -38,6 +37,8 @@
 
 static EFI_SYSTEM_TABLE *systab;
 static EFI_HANDLE global_image_handle;
+static EFI_LOADED_IMAGE *shim_li;
+static EFI_LOADED_IMAGE shim_li_bak;
 
 static CHAR16 *second_stage;
 void *load_options;
@@ -1069,13 +1070,24 @@ static EFI_STATUS shim_read_header(void *data, unsigned int datasize,
 	return efi_status;
 }
 
+VOID
+restore_loaded_image(VOID)
+{
+	if (shim_li->FilePath)
+		FreePool(shim_li->FilePath);
+
+	/*
+	 * Restore our original loaded image values
+	 */
+	CopyMem(shim_li, &shim_li_bak, sizeof(shim_li_bak));
+}
+
 /*
  * Load and run an EFI executable
  */
 EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 {
 	EFI_STATUS efi_status;
-	EFI_LOADED_IMAGE *li, li_bak;
 	EFI_IMAGE_ENTRY_POINT entry_point;
 	EFI_PHYSICAL_ADDRESS alloc_address;
 	UINTN alloc_pages;
@@ -1083,14 +1095,14 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	void *sourcebuffer = NULL;
 	UINT64 sourcesize = 0;
 	void *data = NULL;
-	int datasize;
+	int datasize = 0;
 
 	/*
 	 * We need to refer to the loaded image protocol on the running
 	 * binary in order to find our path
 	 */
 	efi_status = gBS->HandleProtocol(image_handle, &EFI_LOADED_IMAGE_GUID,
-					 (void **)&li);
+					 (void **)&shim_li);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Unable to init protocol\n");
 		return efi_status;
@@ -1099,14 +1111,14 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	/*
 	 * Build a new path from the existing one plus the executable name
 	 */
-	efi_status = generate_path_from_image_path(li, ImagePath, &PathName);
+	efi_status = generate_path_from_image_path(shim_li, ImagePath, &PathName);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Unable to generate path %s: %r\n", ImagePath,
 		       efi_status);
 		goto done;
 	}
 
-	if (findNetboot(li->DeviceHandle)) {
+	if (findNetboot(shim_li->DeviceHandle)) {
 		efi_status = parseNetbootinfo(image_handle);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Netboot parsing failed: %r\n", efi_status);
@@ -1121,7 +1133,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 		}
 		data = sourcebuffer;
 		datasize = sourcesize;
-	} else if (find_httpboot(li->DeviceHandle)) {
+	} else if (find_httpboot(shim_li->DeviceHandle)) {
 		efi_status = httpboot_fetch_buffer (image_handle,
 						    &sourcebuffer,
 						    &sourcesize);
@@ -1136,7 +1148,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 		/*
 		 * Read the new executable off disk
 		 */
-		efi_status = load_image(li, &data, &datasize, PathName);
+		efi_status = load_image(shim_li, &data, &datasize, PathName);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Failed to load image %s: %r\n",
 			       PathName, efi_status);
@@ -1155,13 +1167,13 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	 * We need to modify the loaded image protocol entry before running
 	 * the new binary, so back it up
 	 */
-	CopyMem(&li_bak, li, sizeof(li_bak));
+	CopyMem(&shim_li_bak, shim_li, sizeof(shim_li_bak));
 
 	/*
 	 * Update the loaded image with the second stage loader file path
 	 */
-	li->FilePath = FileDevicePath(NULL, PathName);
-	if (!li->FilePath) {
+	shim_li->FilePath = FileDevicePath(NULL, PathName);
+	if (!shim_li->FilePath) {
 		perror(L"Unable to update loaded image file path\n");
 		efi_status = EFI_OUT_OF_RESOURCES;
 		goto restore;
@@ -1170,7 +1182,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	/*
 	 * Verify and, if appropriate, relocate and execute the executable
 	 */
-	efi_status = handle_image(data, datasize, li, &entry_point,
+	efi_status = handle_image(data, datasize, shim_li, &entry_point,
 				  &alloc_address, &alloc_pages);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Failed to load image: %r\n", efi_status);
@@ -1187,13 +1199,7 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	efi_status = entry_point(image_handle, systab);
 
 restore:
-	if (li->FilePath)
-		FreePool(li->FilePath);
-
-	/*
-	 * Restore our original loaded image values
-	 */
-	CopyMem(li, &li_bak, sizeof(li_bak));
+	restore_loaded_image();
 done:
 	if (PathName)
 		FreePool(PathName);
@@ -1382,7 +1388,7 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 	EFI_STATUS efi_status;
 	EFI_LOADED_IMAGE *li = NULL;
 	CHAR16 *start = NULL;
-	int remaining_size = 0;
+	UINTN remaining_size = 0;
 	CHAR16 *loader_str = NULL;
 	UINTN loader_len = 0;
 	unsigned int i;
@@ -1404,6 +1410,10 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 		perror (L"Failed to get load options: %r\n", efi_status);
 		return efi_status;
 	}
+
+	/* Sanity check since we make several assumptions about the length */
+	if (li->LoadOptionsSize % 2 != 0)
+		return EFI_INVALID_PARAMETER;
 
 	/* So, load options are a giant pain in the ass.  If we're invoked
 	 * from the EFI shell, we get something like this:
@@ -1498,6 +1508,31 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 	 */
 	UINTN strings = count_ucs2_strings(li->LoadOptions,
 					   li->LoadOptionsSize);
+
+	/*
+	 * In some cases we get strings == 1 because BDS is using L' ' as the
+	 * delimeter:
+	 * 0000:74 00 65 00 73 00 74 00 2E 00 65 00 66 00 69 00 t.e.s.t...e.f.i.
+	 * 0016:20 00 6F 00 6E 00 65 00 20 00 74 00 77 00 6F 00 ..o.n.e...t.w.o.
+	 * 0032:20 00 74 00 68 00 72 00 65 00 65 00 00 00       ..t.h.r.e.e...
+	 *
+	 * If so replace it with NULs since the code already handles that
+	 * case.
+	 */
+	if (strings == 1) {
+		UINT16 *cur = start = li->LoadOptions;
+
+		/* replace L' ' with L'\0' if we find any */
+		for (i = 0; i < li->LoadOptionsSize / 2; i++) {
+			if (cur[i] == L' ')
+				cur[i] = L'\0';
+		}
+
+		/* redo the string count */
+		strings = count_ucs2_strings(li->LoadOptions,
+					     li->LoadOptionsSize);
+	}
+
 	/*
 	 * If it's not string data, try it as an EFI_LOAD_OPTION.
 	 */
@@ -1517,70 +1552,41 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 	} else if (strings >= 2) {
 		/*
 		 * UEFI shell copies the whole line of the command into
-		 * LoadOptions.  We ignore the string before the first L' ',
+		 * LoadOptions.  We ignore the string before the first L'\0',
 		 * i.e. the name of this program.
-		 * Counting by two bytes is safe, because we know the size is
-		 * compatible with a UCS2-LE string.
 		 */
-		UINT8 *cur = li->LoadOptions;
-		for (i = 0; i < li->LoadOptionsSize - 2; i += 2) {
-			CHAR16 c = (cur[i+1] << 8) | cur[i];
-			if (c == L' ') {
-				start = (CHAR16 *)&cur[i+2];
-				remaining_size = li->LoadOptionsSize - i - 2;
+		UINT16 *cur = li->LoadOptions;
+		for (i = 1; i < li->LoadOptionsSize / 2; i++) {
+			if (cur[i - 1] == L'\0') {
+				start = &cur[i];
+				remaining_size = li->LoadOptionsSize - (i * 2);
 				break;
 			}
 		}
 
-		if (!start || remaining_size <= 0 || start[0] == L'\0')
-			return EFI_SUCCESS;
-
-		for (i = 0; start[i] != '\0'; i++) {
-			if (start[i] == L' ')
-				start[i] = L'\0';
-			if (start[i] == L'\0') {
-				loader_len = 2 * i + 2;
-				break;
-			}
-		}
-		if (loader_len)
-			remaining_size -= loader_len;
-	} else {
-		/* only find one string */
-		start = li->LoadOptions;
-		loader_len = li->LoadOptionsSize;
-	}
-
-	/*
-	 * Just to be sure all that math is right...
-	 */
-	if (loader_len % 2 != 0)
-		return EFI_INVALID_PARAMETER;
-
-	strings = count_ucs2_strings((UINT8 *)start, loader_len);
-	if (strings < 1)
-		return EFI_SUCCESS;
-
-	/*
-	 * And then I found a version of BDS that gives us our own path in
-	 * LoadOptions:
+		remaining_size -= i * 2 + 2;
+	} else if (strings == 1 && is_our_path(li, start)) {
+		/*
+		 * And then I found a version of BDS that gives us our own path
+		 * in LoadOptions:
 
 77162C58                           5c 00 45 00 46 00 49 00          |\.E.F.I.|
 77162C60  5c 00 42 00 4f 00 4f 00  54 00 5c 00 42 00 4f 00  |\.B.O.O.T.\.B.O.|
 77162C70  4f 00 54 00 58 00 36 00  34 00 2e 00 45 00 46 00  |O.T.X.6.4...E.F.|
 77162C80  49 00 00 00                                       |I...|
 
-	 * which is just cruel... So yeah, just don't use it.
-	 */
-	if (strings == 1 && is_our_path(li, start))
+		* which is just cruel... So yeah, just don't use it.
+		*/
 		return EFI_SUCCESS;
+	}
 
 	/*
 	 * Set up the name of the alternative loader and the LoadOptions for
 	 * the loader
 	 */
 	if (loader_len > 0) {
-		loader_str = AllocatePool(loader_len);
+		/* we might not always have a NULL at the end */
+		loader_str = AllocatePool(loader_len + 2);
 		if (!loader_str) {
 			perror(L"Failed to allocate loader string\n");
 			return EFI_OUT_OF_RESOURCES;
@@ -1588,7 +1594,7 @@ EFI_STATUS set_second_stage (EFI_HANDLE image_handle)
 
 		for (i = 0; i < loader_len / 2; i++)
 			loader_str[i] = start[i];
-		loader_str[loader_len/2-1] = L'\0';
+		loader_str[loader_len/2] = L'\0';
 
 		second_stage = loader_str;
 		load_options = remaining_size ? start + (loader_len/2) : NULL;
@@ -1753,7 +1759,8 @@ shim_init(void)
 void
 shim_fini(void)
 {
-	cleanup_sbat_var(&sbat_var);
+	if (secure_mode())
+		cleanup_sbat_var(&sbat_var);
 
 	/*
 	 * Remove our protocols
@@ -1835,6 +1842,35 @@ debug_hook(void)
 	x = 1;
 }
 
+typedef enum {
+	COLD_RESET,
+	EXIT_FAILURE,
+	EXIT_SUCCESS,	// keep this one last
+} devel_egress_action;
+
+void
+devel_egress(devel_egress_action action UNUSED)
+{
+#ifdef ENABLE_SHIM_DEVEL
+	char *reasons[] = {
+		[COLD_RESET] = "reset",
+		[EXIT_FAILURE] = "exit",
+	};
+	if (action == EXIT_SUCCESS)
+		return;
+
+	console_print(L"Waiting to %a...", reasons[action]);
+	for (size_t sleepcount = 0; sleepcount < 10; sleepcount++) {
+		console_print(L"%d...", 10 - sleepcount);
+		msleep(1000000);
+	}
+	console_print(L"\ndoing %a\n", action);
+
+	if (action == COLD_RESET)
+		gRT->ResetSystem(EfiResetCold, EFI_SECURITY_VIOLATION, 0, NULL);
+#endif
+}
+
 EFI_STATUS
 efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 {
@@ -1859,6 +1895,7 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 		L"shim_init() failed",
 		L"import of SBAT data failed",
 		L"SBAT self-check failed",
+		L"SBAT UEFI variable setting failed",
 		NULL
 	};
 	enum {
@@ -1866,6 +1903,7 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 		SHIM_INIT,
 		IMPORT_SBAT,
 		SBAT_SELF_CHECK,
+		SET_SBAT,
 	} msg = IMPORT_MOK_STATE;
 
 	/*
@@ -1895,30 +1933,34 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 	 */
 	debug_hook();
 
-	INIT_LIST_HEAD(&sbat_var);
-	efi_status = parse_sbat_var(&sbat_var);
-	/*
-	 * Until a SBAT variable is installed into the systems, it is expected that
-	 * attempting to parse the variable will fail with an EFI_NOT_FOUND error.
-	 *
-	 * Do not consider that error fatal for now.
-	 */
-	if (EFI_ERROR(efi_status) && efi_status != EFI_NOT_FOUND) {
-		perror(L"Parsing SBAT variable failed: %r\n",
-		       efi_status);
-		msg = IMPORT_SBAT;
+	efi_status = set_sbat_uefi_variable();
+	if (EFI_ERROR(efi_status) && secure_mode()) {
+		perror(L"SBAT variable initialization failed\n");
+		msg = SET_SBAT;
 		goto die;
+	} else if (EFI_ERROR(efi_status)) {
+		dprint(L"SBAT variable initialization failed: %r\n",
+		       efi_status);
 	}
 
-	if (secure_mode ()) {
+	if (secure_mode()) {
 		char *sbat_start = (char *)&_sbat;
 		char *sbat_end = (char *)&_esbat;
+
+		INIT_LIST_HEAD(&sbat_var);
+		efi_status = parse_sbat_var(&sbat_var);
+		if (EFI_ERROR(efi_status)) {
+			perror(L"Parsing SBAT variable failed: %r\n",
+				efi_status);
+			msg = IMPORT_SBAT;
+			goto die;
+		}
 
 		efi_status = handle_sbat(sbat_start, sbat_end - sbat_start);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Verifiying shim SBAT data failed: %r\n",
 			       efi_status);
-			msg = SBAT_SELF_CHECK;;
+			msg = SBAT_SELF_CHECK;
 			goto die;
 		}
 	}
@@ -1944,9 +1986,13 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 die:
 		console_print(L"Something has gone seriously wrong: %s: %r\n",
 			      msgs[msg], efi_status);
+#if defined(ENABLE_SHIM_DEVEL)
+		devel_egress(COLD_RESET);
+#else
 		msleep(5000000);
 		gRT->ResetSystem(EfiResetShutdown, EFI_SECURITY_VIOLATION,
 				 0, NULL);
+#endif
 	}
 
 	efi_status = shim_init();
@@ -1969,5 +2015,6 @@ die:
 	efi_status = init_grub(image_handle);
 
 	shim_fini();
+	devel_egress(EFI_ERROR(efi_status) ? EXIT_FAILURE : EXIT_SUCCESS);
 	return efi_status;
 }

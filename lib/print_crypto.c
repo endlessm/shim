@@ -2,11 +2,6 @@
 /*
  * Copyright 2019 SUSE LLC <glin@suse.com>
  */
-
-#include <efi.h>
-#include <efilib.h>
-#include <stdarg.h>
-
 #include "shim.h"
 
 #include <Library/BaseCryptLib.h>
@@ -15,7 +10,7 @@
 #include <console.h>
 
 static int
-print_errors_cb(const char *str, size_t len, void *u)
+print_errors_cb(const char *str, size_t len, void *u UNUSED)
 {
 	console_print(L"%a", str);
 
