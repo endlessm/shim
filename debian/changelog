@@ -1,3 +1,9 @@
+shim (15.3-2) unstable; urgency=medium
+
+  * Add missing build-dep on xxd for build-time unit tests
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 23 Mar 2021 23:39:48 +0000
+
 shim (15.3-1) unstable; urgency=medium
 
   [ Steve McIntyre ]

@@ -11,7 +11,8 @@ Build-Depends: debhelper-compat (= 12),
 	       libelf-dev,
 	       gcc-10,
 	       dos2unix,
-	       pesign (>= 0.112-5)
+	       pesign (>= 0.112-5),
+	       xxd
 Vcs-Browser: https://salsa.debian.org/efi-team/shim
 Vcs-Git: https://salsa.debian.org/efi-team/shim.git
 
