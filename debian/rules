@@ -69,6 +69,7 @@ override_dh_auto_clean:
 
 override_dh_auto_build: $(DBX_LIST) $(SBAT_DATA)
 	dh_auto_build -- $(COMMON_OPTIONS)
+	sha256sum *.efi
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
