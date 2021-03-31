@@ -18,14 +18,20 @@ parse_sbat_section(char *section_base, size_t section_size,
 	size_t n;
 	char *strtab;
 
-	if (!section_base || !section_size || !n_entries || !entriesp)
+	if (!section_base || !section_size || !n_entries || !entriesp) {
+		dprint(L"section_base:0x%lx section_size:0x%lx\n",
+		       section_base, section_size);
+		dprint(L"n_entries:0x%lx entriesp:0x%lx\n",
+		       n_entries, entriesp);
 		return EFI_INVALID_PARAMETER;
+	}
 
 	INIT_LIST_HEAD(&csv);
 
 	efi_status =
 		parse_csv_data(section_base, end, SBAT_SECTION_COLUMNS, &csv);
 	if (EFI_ERROR(efi_status)) {
+		dprint(L"parse_csv_data failed: %r\n", efi_status);
 		return efi_status;
 	}
 
@@ -38,6 +44,8 @@ parse_sbat_section(char *section_base, size_t section_size,
 
 		if (row->n_columns < SBAT_SECTION_COLUMNS) {
 			efi_status = EFI_INVALID_PARAMETER;
+			dprint(L"row->n_columns:%lu SBAT_SECTION_COLUMNS:%lu\n",
+			       row->n_columns, SBAT_SECTION_COLUMNS);
 			goto err;
 		}
 
@@ -45,6 +53,7 @@ parse_sbat_section(char *section_base, size_t section_size,
 		allocsz += sizeof(struct sbat_section_entry);
 		for (i = 0; i < row->n_columns; i++) {
 			if (row->columns[i][0] == '\000') {
+				dprint(L"row[%lu].columns[%lu][0] == '\\000'\n", n, i);
 				efi_status = EFI_INVALID_PARAMETER;
 				goto err;
 			}
@@ -120,8 +129,8 @@ verify_single_entry(struct sbat_section_entry *entry, struct sbat_var_entry *sba
 		sbat_var_gen = atoi((const char *)sbat_var_entry->component_generation);
 
 		if (sbat_gen < sbat_var_gen) {
-			dprint(L"component %a, generation %d, was revoked by SBAT variable",
-			       entry->component_name, sbat_gen);
+			dprint(L"component %a, generation %d, was revoked by %s variable\n",
+			       entry->component_name, sbat_gen, SBAT_VAR_NAME);
 			LogError(L"image did not pass SBAT verification\n");
 			return EFI_SECURITY_VIOLATION;
 		}
@@ -139,7 +148,7 @@ cleanup_sbat_var(list_t *entries)
 	list_for_each_safe(pos, tmp, entries) {
 		entry = list_entry(pos, struct sbat_var_entry, list);
 
-		if ((uintptr_t)entry < (uintptr_t)first && entry != NULL)
+		if (first == NULL || (uintptr_t)entry < (uintptr_t)first)
 			first = entry;
 
 		list_del(&entry->list);
@@ -157,7 +166,7 @@ verify_sbat_helper(list_t *local_sbat_var, size_t n, struct sbat_section_entry *
 	struct sbat_var_entry *sbat_var_entry;
 
 	if (list_empty(local_sbat_var)) {
-		dprint(L"SBAT variable not present\n");
+		dprint(L"%s variable not present\n", SBAT_VAR_NAME);
 		return EFI_SUCCESS;
 	}
 
@@ -239,10 +248,10 @@ parse_sbat_var_data(list_t *entry_list, UINT8 *data, UINTN datasize)
 
 	INIT_LIST_HEAD(entry_list);
 
-	entries = (struct sbat_var_entry **)strtab;
-	strtab += sizeof(struct sbat_var_entry *) * n;
 	entry = (struct sbat_var_entry *)strtab;
 	strtab += sizeof(struct sbat_var_entry) * n;
+	entries = (struct sbat_var_entry **)strtab;
+	strtab += sizeof(struct sbat_var_entry *) * n;
 	n = 0;
 
 	list_for_each(pos, &csv) {
@@ -277,8 +286,10 @@ parse_sbat_var(list_t *entries)
 	UINTN datasize;
 	EFI_STATUS efi_status;
 
-	if (!entries)
+	if (!entries) {
+		dprint(L"entries is NULL\n");
 		return EFI_INVALID_PARAMETER;
+	}
 
 	efi_status = get_variable(SBAT_VAR_NAME, &data, &datasize, SHIM_LOCK_GUID);
 	if (EFI_ERROR(efi_status)) {
@@ -304,6 +315,14 @@ check_sbat_var_attributes(UINT32 attributes)
 #endif
 }
 
+bool
+preserve_sbat_uefi_variable(UINT8 *sbat, UINTN sbatsize, UINT32 attributes)
+{
+	return check_sbat_var_attributes(attributes) &&
+	       sbatsize >= strlen(SBAT_VAR_SIG "1") &&
+	       !strncmp((const char *)sbat, SBAT_VAR_SIG, strlen(SBAT_VAR_SIG));
+}
+
 EFI_STATUS
 set_sbat_uefi_variable(void)
 {
@@ -316,19 +335,16 @@ set_sbat_uefi_variable(void)
 	efi_status = get_variable_attr(SBAT_VAR_NAME, &sbat, &sbatsize,
 				       SHIM_LOCK_GUID, &attributes);
 	/*
-	 * Always set the SBAT UEFI variable if it fails to read.
+	 * Always set the SbatLevel UEFI variable if it fails to read.
 	 *
-	 * Don't try to set the SBAT UEFI variable if attributes match and
-	 * the signature matches.
+	 * Don't try to set the SbatLevel UEFI variable if attributes match
+	 * and the signature matches.
 	 */
 	if (EFI_ERROR(efi_status)) {
 		dprint(L"SBAT read failed %r\n", efi_status);
-	} else if (check_sbat_var_attributes(attributes) &&
-		   sbatsize >= strlen(SBAT_VAR_SIG "1") &&
-		   strncmp((const char *)sbat, SBAT_VAR_SIG,
-	                   strlen(SBAT_VAR_SIG))) {
-		dprint("SBAT variable is %d bytes, attributes are 0x%08x\n",
-		       sbatsize, attributes);
+	} else if (preserve_sbat_uefi_variable(sbat, sbatsize, attributes)) {
+		dprint(L"%s variable is %d bytes, attributes are 0x%08x\n",
+		       SBAT_VAR_NAME, sbatsize, attributes);
 		FreePool(sbat);
 		return EFI_SUCCESS;
 	} else {
@@ -341,7 +357,8 @@ set_sbat_uefi_variable(void)
 		efi_status = set_variable(SBAT_VAR_NAME, SHIM_LOCK_GUID,
 		                          attributes, 0, "");
 		if (EFI_ERROR(efi_status)) {
-			dprint(L"SBAT variable delete failed %r\n", efi_status);
+			dprint(L"%s variable delete failed %r\n", SBAT_VAR_NAME,
+					efi_status);
 			return efi_status;
 		}
 	}
@@ -350,7 +367,8 @@ set_sbat_uefi_variable(void)
 	efi_status = set_variable(SBAT_VAR_NAME, SHIM_LOCK_GUID, SBAT_VAR_ATTRS,
 	                          sizeof(SBAT_VAR)-1, SBAT_VAR);
 	if (EFI_ERROR(efi_status)) {
-		dprint(L"SBAT variable writing failed %r\n", efi_status);
+		dprint(L"%s variable writing failed %r\n", SBAT_VAR_NAME,
+				efi_status);
 		return efi_status;
 	}
 
@@ -358,7 +376,7 @@ set_sbat_uefi_variable(void)
 	efi_status = get_variable(SBAT_VAR_NAME, &sbat, &sbatsize,
 				  SHIM_LOCK_GUID);
 	if (EFI_ERROR(efi_status)) {
-		dprint(L"SBAT read failed %r\n", efi_status);
+		dprint(L"%s read failed %r\n", SBAT_VAR_NAME, efi_status);
 		return efi_status;
 	}
 
@@ -368,7 +386,7 @@ set_sbat_uefi_variable(void)
 		       strlen(SBAT_VAR));
 		efi_status = EFI_INVALID_PARAMETER;
 	} else {
-		dprint(L"SBAT variable initialization succeeded\n");
+		dprint(L"%s variable initialization succeeded\n", SBAT_VAR_NAME);
 	}
 
 	FreePool(sbat);
