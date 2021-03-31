@@ -68,11 +68,11 @@ override_dh_auto_clean:
 	rm -f $(DBX_LIST) $(SBAT_DATA) sbat.*.csv
 
 override_dh_auto_build: $(DBX_LIST) $(SBAT_DATA)
-	dh_auto_build -- $(COMMON_OPTIONS)
+	dh_auto_build -- INSTALL=install $(COMMON_OPTIONS)
 	sha256sum *.efi
 
 override_dh_auto_install:
-	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
+	dh_auto_install --destdir=debian/tmp -- INSTALL=install $(COMMON_OPTIONS)
 	# Remove the copy of the source that's installed - we have git
 	# already...
 	rm -rf debian/tmp/usr

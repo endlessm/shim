@@ -3,6 +3,7 @@ shim (15.4-1) unstable; urgency=medium
   * New upstream release fixing more bugs: SBAT and arm64 support.
   * Print sha256 checksums of the EFI binaries when the build is done,
     for easier comparison between builds.
+  * Override dh_auto_build setting INSTALL, cut down on build noise.
 
  -- Steve McIntyre <93sam@debian.org>  Wed, 31 Mar 2021 18:25:00 +0100
 
