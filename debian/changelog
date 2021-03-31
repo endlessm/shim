@@ -1,9 +1,10 @@
-shim (15.3-4) UNRELEASED; urgency=medium
+shim (15.4-1) unstable; urgency=medium
 
+  * New upstream release fixing more bugs: SBAT and arm64 support.
   * Print sha256 checksums of the EFI binaries when the build is done,
     for easier comparison between builds.
 
- -- Steve McIntyre <93sam@debian.org>  Wed, 24 Mar 2021 13:21:05 +0000
+ -- Steve McIntyre <93sam@debian.org>  Wed, 31 Mar 2021 18:25:00 +0100
 
 shim (15.3-3) unstable; urgency=medium
 
