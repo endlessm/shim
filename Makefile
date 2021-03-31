@@ -1,7 +1,7 @@
 default : all
 
 NAME		= shim
-VERSION		= 15.3
+VERSION		= 15.4
 ifneq ($(origin RELEASE),undefined)
 DASHRELEASE	?= -$(RELEASE)
 else
@@ -45,7 +45,7 @@ MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o
 ORIG_MOK_SOURCES = MokManager.c PasswordCrypt.c crypt_blowfish.c shim.h $(wildcard include/*.h)
 FALLBACK_OBJS = fallback.o tpm.o errlog.o sbat_data.o
 ORIG_FALLBACK_SRCS = fallback.c
-SBATPATH = data/sbat.csv
+SBATPATH = $(TOPDIR)/data/sbat.csv
 
 ifeq ($(SOURCE_DATE_EPOCH),)
 	UNAME=$(shell uname -s -m -p -i -o)
@@ -111,7 +111,7 @@ sbat.%.csv : data/sbat.%.csv
 	$(DOS2UNIX) $(D2UFLAGS) $< $@
 	tail -c1 $@ | read -r _ || echo >> $@ # ensure a trailing newline
 
-VENDOR_SBATS := $(foreach x,$(wildcard data/sbat.*.csv),$(notdir $(x)))
+VENDOR_SBATS := $(sort $(foreach x,$(wildcard $(TOPDIR)/data/sbat.*.csv data/sbat.*.csv),$(notdir $(x))))
 
 sbat_data.o : | $(SBATPATH) $(VENDOR_SBATS)
 sbat_data.o : /dev/null
@@ -146,21 +146,23 @@ $(MMSONAME): $(MOK_OBJS) $(LIBS)
 
 gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a: CFLAGS+=-DGNU_EFI_USE_EXTERNAL_STDARG
 gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
+	mkdir -p gnu-efi/lib gnu-efi/gnuefi
 	$(MAKE) -C gnu-efi \
 		ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
+		-f $(TOPDIR)/gnu-efi/Makefile \
 		lib gnuefi inc
 
 Cryptlib/libcryptlib.a:
 	for i in Hash Hmac Cipher Rand Pk Pem SysCall; do mkdir -p Cryptlib/$$i; done
-	$(MAKE) VPATH=$(TOPDIR)/Cryptlib -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile
+	$(MAKE) TOPDIR=$(TOPDIR) VPATH=$(TOPDIR)/Cryptlib -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile
 
 Cryptlib/OpenSSL/libopenssl.a:
 	for i in x509v3 x509 txt_db stack sha rsa rc4 rand pkcs7 pkcs12 pem ocsp objects modes md5 lhash kdf hmac evp err dso dh conf comp cmac buffer bn bio async/arch asn1 aes; do mkdir -p Cryptlib/OpenSSL/crypto/$$i; done
-	$(MAKE) VPATH=$(TOPDIR)/Cryptlib/OpenSSL -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile
+	$(MAKE) TOPDIR=$(TOPDIR) VPATH=$(TOPDIR)/Cryptlib/OpenSSL -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile
 
 lib/lib.a: | $(TOPDIR)/lib/Makefile $(wildcard $(TOPDIR)/include/*.[ch])
-	if [ ! -d lib ]; then mkdir lib ; fi
-	$(MAKE) VPATH=$(TOPDIR)/lib -C lib -f $(TOPDIR)/lib/Makefile lib.a
+	mkdir -p lib
+	$(MAKE) VPATH=$(TOPDIR)/lib TOPDIR=$(TOPDIR) -C lib -f $(TOPDIR)/lib/Makefile
 
 buildid : $(TOPDIR)/buildid.c
 	$(HOSTCC) -I/usr/include -Og -g3 -Wall -Werror -Wextra -o $@ $< -lelf
@@ -223,6 +225,7 @@ endif
 install-as-data : install-deps
 	$(INSTALL) -d -m 0755 $(DESTDIR)/$(DATATARGETDIR)
 	$(INSTALL) -m 0644 $(SHIMNAME) $(DESTDIR)/$(DATATARGETDIR)/
+	$(INSTALL) -m 0644 $(BOOTCSVNAME) $(DESTDIR)/$(DATATARGETDIR)/
 ifneq ($(origin ENABLE_SHIM_HASH),undefined)
 	$(INSTALL) -m 0644 $(SHIMHASHNAME) $(DESTDIR)/$(DATATARGETDIR)/
 endif
@@ -239,7 +242,7 @@ ifneq ($(OBJCOPY_GTE224),1)
 	$(error objcopy >= 2.24 is required)
 endif
 	$(OBJCOPY) -D -j .text -j .sdata -j .data -j .data.ident \
-		-j .dynamic -j .dynsym -j .rel* \
+		-j .dynamic -j .rodata -j .rel* \
 		-j .rela* -j .reloc -j .eh_frame \
 		-j .vendor_cert -j .sbat \
 		$(FORMAT) $< $@
@@ -256,7 +259,7 @@ ifneq ($(OBJCOPY_GTE224),1)
 	$(error objcopy >= 2.24 is required)
 endif
 	$(OBJCOPY) -D -j .text -j .sdata -j .data \
-		-j .dynamic -j .dynsym -j .rel* \
+		-j .dynamic -j .rodata -j .rel* \
 		-j .rela* -j .reloc -j .eh_frame -j .sbat \
 		-j .debug_info -j .debug_abbrev -j .debug_aranges \
 		-j .debug_line -j .debug_str -j .debug_ranges \
@@ -275,35 +278,46 @@ else
 endif
 
 test :
-	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" all
+	@make -f $(TOPDIR)/include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" all
 
 $(patsubst %.c,%,$(wildcard test-*.c)) :
-	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" $@
+	@make -f $(TOPDIR)/include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" $@
 
 .PHONY : $(patsubst %.c,%,$(wildcard test-*.c)) test
 
 clean-test-objs:
-	@make -f include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" clean
+	@make -f $(TOPDIR)/include/test.mk EFI_INCLUDES="$(EFI_INCLUDES)" ARCH_DEFINES="$(ARCH_DEFINES)" clean
 
 clean-gnu-efi:
-	$(MAKE) -C gnu-efi \
-		ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
-		clean
+	@if [ -d gnu-efi ] ; then \
+		$(MAKE) -C gnu-efi \
+			ARCH=$(ARCH_GNUEFI) TOPDIR=$(TOPDIR)/gnu-efi \
+			-f $(TOPDIR)/gnu-efi/Makefile \
+			clean ; \
+	fi
+
+clean-lib-objs:
+	@if [ -d lib ] ; then \
+		$(MAKE) -C lib TOPDIR=$(TOPDIR) -f $(TOPDIR)/lib/Makefile clean ; \
+	fi
 
 clean-shim-objs:
-	$(MAKE) -C lib -f $(TOPDIR)/lib/Makefile clean
 	@rm -rvf $(TARGET) *.o $(SHIM_OBJS) $(MOK_OBJS) $(FALLBACK_OBJS) $(KEYS) certdb $(BOOTCSVNAME)
 	@rm -vf *.debug *.so *.efi *.efi.* *.tar.* version.c buildid
 	@rm -vf Cryptlib/*.[oa] Cryptlib/*/*.[oa]
 	@if [ -d .git ] ; then git clean -f -d -e 'Cryptlib/OpenSSL/*'; fi
 
 clean-openssl-objs:
-	$(MAKE) -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile clean
+	@if [ -d Cryptlib/OpenSSL ] ; then \
+		$(MAKE) -C Cryptlib/OpenSSL -f $(TOPDIR)/Cryptlib/OpenSSL/Makefile clean ; \
+	fi
 
 clean-cryptlib-objs:
-	$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean
+	@if [ -d Cryptlib ] ; then \
+		$(MAKE) -C Cryptlib -f $(TOPDIR)/Cryptlib/Makefile clean ; \
+	fi
 
-clean: clean-shim-objs clean-test-objs clean-gnu-efi clean-openssl-objs clean-cryptlib-objs
+clean: clean-shim-objs clean-test-objs clean-gnu-efi clean-openssl-objs clean-cryptlib-objs clean-lib-objs
 
 GITTAG = $(VERSION)
 

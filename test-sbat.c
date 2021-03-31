@@ -319,6 +319,7 @@ test_parse_sbat_section_too_many_elem(void)
 	struct sbat_section_entry *test_entries[] = {
 		&test_section_entry1, &test_section_entry2,
 	};
+	int rc = -1;
 
 	status = parse_sbat_section(section_base, section_size, &n, &entries);
 	assert_equal_return(status, EFI_SUCCESS, -1, "got %#hhx expected %#hhx\n");
@@ -341,10 +342,10 @@ test_parse_sbat_section_too_many_elem(void)
 #undef mkassert
 	}
 	assert_equal_goto(n, 2, fail, "got %zu expected %d\n");
-	return 0;
+	rc = 0;
 fail:
 	cleanup_sbat_section_entries(n, entries);
-	return -1;
+	return rc;
 }
 
 /*
@@ -439,14 +440,19 @@ test_verify_sbat_null_sbat_section(void)
 	list_t test_sbat_var;
 	size_t n = 0;
 	struct sbat_section_entry **entries = NULL;
+	int rc = -1;
 
 	INIT_LIST_HEAD(&test_sbat_var);
 	status = parse_sbat_var_data(&test_sbat_var, sbat_var_data, sizeof(sbat_var_data));
-	assert_equal_return(status, EFI_SUCCESS, -1, "got %#x expected %#x\n");
+	assert_equal_goto(status, EFI_SUCCESS, err, "got %#x expected %#x\n");
 
-	status = verify_sbat_helper(&sbat_var, n, entries);
-	assert_equal_return(status, EFI_SUCCESS, -1, "got %#x expected %#x\n");
-	return 0;
+	status = verify_sbat_helper(&test_sbat_var, n, entries);
+	assert_equal_goto(status, EFI_SUCCESS, err, "got %#x expected %#x\n");
+	rc = 0;
+err:
+	cleanup_sbat_var(&test_sbat_var);
+
+	return rc;
 }
 
 #if 0
@@ -902,6 +908,7 @@ test_parse_and_verify(void)
 	struct sbat_section_entry *test_entries[] = {
 		&test_section_entry1, &test_section_entry2,
 	};
+	int rc = -1;
 
 	status = parse_sbat_section(sbat_section, sizeof(sbat_section)-1,
 	                            &n_section_entries, &section_entries);
@@ -940,16 +947,71 @@ test_parse_and_verify(void)
 
 	INIT_LIST_HEAD(&sbat_var);
 	status = parse_sbat_var_data(&sbat_var, sbat_var_alloced, sbat_var_data_size);
+	free(sbat_var_alloced);
 	if (status != EFI_SUCCESS || list_empty(&sbat_var))
 		return -1;
 
 	status = verify_sbat(n_section_entries, section_entries);
+	assert_equal_goto(status, EFI_SECURITY_VIOLATION, err, "expected %#x got %#x\n");
 
-	assert_equal_return(status, EFI_SECURITY_VIOLATION, -1, "expected %#x got %#x\n");
-	cleanup_sbat_var(&sbat_var);
+	rc = 0;
+err:
 	cleanup_sbat_section_entries(n_section_entries, section_entries);
+	cleanup_sbat_var(&sbat_var);
 
-	return 0;
+	return rc;
+}
+
+int
+test_preserve_sbat_uefi_variable_good(void)
+{
+	char sbat[] = "sbat,1,\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+		return 0;
+	else
+		return -1;
+}
+
+int
+test_preserve_sbat_uefi_variable_bad_sig(void)
+{
+	char sbat[] = "bad_sig,1,\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+		return -1;
+	else
+		return 0;
+}
+
+int
+test_preserve_sbat_uefi_variable_bad_attr(void)
+{
+	char sbat[] = "sbat,1,\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = 0;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+		return -1;
+	else
+		return 0;
+}
+
+int
+test_preserve_sbat_uefi_variable_bad_short(void)
+{
+	char sbat[] = "sba";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+		return -1;
+	else
+		return 0;
 }
 
 int
@@ -988,6 +1050,11 @@ main(void)
 	test(test_verify_sbat_reject_diff_name_mixed);
 #endif
 	test(test_parse_and_verify);
+
+	test(test_preserve_sbat_uefi_variable_good);
+	test(test_preserve_sbat_uefi_variable_bad_sig);
+	test(test_preserve_sbat_uefi_variable_bad_attr);
+	test(test_preserve_sbat_uefi_variable_bad_short);
 
 	return 0;
 }

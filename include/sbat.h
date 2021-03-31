@@ -20,16 +20,16 @@
 	(UEFI_VAR_NV_BS | EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
 
 #if defined(ENABLE_SHIM_DEVEL)
-#define SBAT_VAR_NAME L"SBAT_DEVEL"
-#define SBAT_VAR_NAME8 "SBAT_DEVEL"
-#define SBAT_RT_VAR_NAME L"SbatRT_DEVEL"
-#define SBAT_RT_VAR_NAME8 "SbatRT_DEVEL"
+#define SBAT_VAR_NAME L"SbatLevel_DEVEL"
+#define SBAT_VAR_NAME8 "SbatLevel_DEVEL"
+#define SBAT_RT_VAR_NAME L"SbatLevelRT_DEVEL"
+#define SBAT_RT_VAR_NAME8 "SbatLevelRT_DEVEL"
 #define SBAT_VAR_ATTRS UEFI_VAR_NV_BS_RT
 #else
-#define SBAT_VAR_NAME L"SBAT"
-#define SBAT_VAR_NAME8 "SBAT"
-#define SBAT_RT_VAR_NAME L"SbatRT"
-#define SBAT_RT_VAR_NAME8 "SbatRT"
+#define SBAT_VAR_NAME L"SbatLevel"
+#define SBAT_VAR_NAME8 "SbatLevel"
+#define SBAT_RT_VAR_NAME L"SbatLevelRT"
+#define SBAT_RT_VAR_NAME8 "SbatLevelRT"
 #define SBAT_VAR_ATTRS UEFI_VAR_NV_BS
 #endif
 
@@ -51,6 +51,7 @@ extern list_t sbat_var;
 EFI_STATUS parse_sbat_var(list_t *entries);
 void cleanup_sbat_var(list_t *entries);
 EFI_STATUS set_sbat_uefi_variable(void);
+bool preserve_sbat_uefi_variable(UINT8 *sbat, UINTN sbatsize, UINT32 attributes);
 
 struct sbat_section_entry {
 	const CHAR8 *component_name;
