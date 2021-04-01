@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# Helper script for generating dbx entries for the Debian shim package
+#
+# GPL v2+
+#
+# Copyright 2020- Steve McIntyre <93sam@debian.org>
+
+REASON=""
+
+usage () {
+    echo "$0 <options> <deb1> ... <debN>"
+    echo
+    echo "generate hashes for the signed binaries in deb file(s) in"
+    echo "the correct format to go in the dbx.hashes file"
+    echo
+    echo " -r <reason> - the reason for the blacklisting, required for dbx"
+    echo
+    echo "and a list of .deb files to scan"
+}
+
+while getopts ":r:" o; do
+    case "${o}" in
+        r)
+            REASON=${OPTARG}
+            ;;
+        *)
+            echo "Unknown option ${o}"
+            usage
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ "$REASON"x = ""x ]; then
+    echo "$0: Needs a reason to be specified"
+    echo
+    usage
+    exit 1
+fi
+
+for DEB in $@; do
+    DIR=$(mktemp -d)
+    if [ -f $DEB ]; then
+	BASEDEB=$(basename $DEB)
+	echo "###############################"
+	echo "# Files from $BASEDEB"
+	echo "# ($REASON)"
+	dpkg -x $DEB $DIR
+	for EFI in $(find $DIR -name *.signed); do
+	    BASE=$(basename $EFI)
+	    case $BASE in
+		*aa64*efi.signed)
+		    EFIARCH=aa64;;
+		*x64*efi.signed)
+		    EFIARCH=x64;;
+		*ia32*efi.signed)
+		    EFIARCH=ia32;;
+		*)
+		    echo "Can't determine EFI arch from $BASE. Abort"
+		    exit 1
+		    ;;
+	    esac
+	    echo "# $BASE"
+	    HASH=$(pesign --hash --padding --in $EFI | awk '{print $2}')
+	    echo "$HASH $EFIARCH"
+	done
+	echo "###############################"
+	echo
+    fi
+    rm -rf $DIR
+done

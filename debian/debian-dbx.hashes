@@ -1,0 +1,1188 @@
+# debian-dbx.hashes
+#
+# This file contains the sha256 sums of the binaries that we want to
+# blacklist directly in our signed shim. Add entries below, with comments
+# to explain each entry (where possible).
+#
+# The data in this file needs should be of the form:
+#
+# <hex-encoded sha256 checksums> <arch>
+#
+# All other lines will be ignored. I'm using shell-style comments just
+# for clarity.
+#
+# The hashes are generated using:
+#
+#     pesign --hash --padding --in <binary>
+#
+# on *either* the signed or unsigned binary, pesign doesn't care
+# which. See the helper script block_signed_deb for an easy way to
+# generate this information.
+
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+16_arm64.deb
+# (allows use of the devicetree command in secure mode)
+# grubaa64.efi.signed
+1c88f32ebd6ecd1a84d83940f78b0d69168a4ff57a1f57fd070e7307899bbc99 aa64
+# grubnetaa64.efi.signed
+7f5074f42eb92f183fa8748c92992bae8b23a963bc9f8b85692ee7116dc3dcb0 aa64
+# gcdaa64.efi.signed
+d9e95ad9ea0e0df522f7f41ef9fd9cb5e65cfb0c285465aabd077023e6edb6ba aa64
+
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+17_arm64.deb
+# (allows use of the devicetree command in secure mode)
+# grubaa64.efi.signed
+77fb2b05450520eecdbbfa3070fb26405d151b576cd6dffc8cab6a2f0bcff10c aa64
+# grubnetaa64.efi.signed
+d70b41ea19ea19836198252ac90b1b6fca40ad6baa3911b4a27e886e6423426a aa64
+# gcdaa64.efi.signed
+44f20309d8b0f661da2c3cf225ba9c0f7b8a2d6ff3885ecba710e5907870ee24 aa64
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+10_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+751c16482bbf4453f268744dcf90b2b8555dd64199f89d2f86c644dfaacc01ef x64
+# grubx64.efi.signed
+a5f1bae582dcc2e8416c004bd56c04527c3f238a41428dd2b83d112b5c6d9667 x64
+# grubnetx64.efi.signed
+015bf9678451dbd2cc6e2fb4a1cdcfd0468ab0d70b19afd51dd2ee387899b6da x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+11_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+0be28827b3d666cd3e6010f337a60c45a3afba8a170774117b3fe2b92670e996 x64
+# grubx64.efi.signed
+6eacdc7c65174408622cfa9ba00302ef2dff2ff885e13b6490eeaf5737fd5748 x64
+# grubnetx64.efi.signed
+6aa9f1b9427817cb77723d6422b680b83d6faaf26b3599bd7fe1d7542f33dc9f x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+13_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+e85dda4456e2191d29dcd4f78504b85637b78ed49a0fd4fa0b22d60413cef907 x64
+# grubx64.efi.signed
+b6d25355011b8f9f8aa85b4bf6f0eb6f4077eb4705b62c24adf43a360eb00b35 x64
+# grubnetx64.efi.signed
+1acf21947d9b37e0f0eb095be0ef007f4d0a77f25de1d31d672a60b4d6d224d1 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+16_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+7d070db34e93665210de2cfccb6c2acbf762f1c64a830cfed01987bcb31003e5 x64
+# grubx64.efi.signed
+c7b57dae0631bf83f1ddf3782fa45c203034d15585cd3803fddea0e67f898bbb x64
+# grubnetx64.efi.signed
+3a087cbfee5747e708ad0eb461b1a219d44800610bf93e01bf2cda99fca85733 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+17_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+000f1547bb113601d65df9cb74ac62dd6d2ca85a0c2bb375c2f0ecedb59c84a4 x64
+# grubx64.efi.signed
+25677d1f00f5ec8af184844faedc4e0d2fb056711665d2bb5adb8cba396a6560 x64
+# grubnetx64.efi.signed
+2443f350c846fc8b9adf0281ffdaddb02a678616e23e97f62add19ec0c1d9b24 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+18_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+3060b72acb7bea0374c79f3f2aa695d59765090ded6732c85b9aba8bf3b7c099 x64
+# grubx64.efi.signed
+0afc5b94162632103bf4747a06c58d6c6aa88b66da6fe86251c313e1319a0a25 x64
+# grubnetx64.efi.signed
+fa72b0a14c76d5875a8718be938f995ca3a4870cd3610186bcc398824b2bc148 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+19_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+6e5b895654bce04ef5c4bcc3b169b9edb6c63cffe2b871d27290d94b4d842f27 x64
+# grubx64.efi.signed
+786ca7ed45ac4422e47275a89e44765732ca02da061f7dafb87acde792ba3ba2 x64
+# grubnetx64.efi.signed
+cc5f580dc70e5ad6d0bc3bdd4627fceb4177a3b78f4de221af37aa5dc78665a8 x64
+# grubnetx64-installer.efi.signed
+87066aa9201de0cf135707f4eed0ee60f578174310698312539c34782c1094e9 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+20+deb10u1_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+0d390c6d08e2836d9f222cb3b99efef4e506196a7bfae9f5fae36aee6032e77e x64
+# grubx64.efi.signed
+52e243c5a619442347811bfb910a1d2851f43b195cbef07705f3bf8314880b59 x64
+# grubnetx64.efi.signed
+6d29f8a3c575c67bb033b48cfc52840e91b1a69aa78c73bdc1337e3cf62ee10a x64
+# grubnetx64-installer.efi.signed
+cf757a1bb1bdaf9b58c0485385e086690ec590f2681e853b9d15a51818b120c2 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+20+deb10u2_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+a16043dd753c650157619d69d18c03c8453a0f2da56bdbff1d2348a84efc0dd4 x64
+# grubx64.efi.signed
+fa0d9a7274925078bde75505f00bcf98391309a9dc789ee3a5493fbf6362de36 x64
+# grubnetx64.efi.signed
+ef7b541191d1c6b65d4ab241368f7a979a89ccfe16da8e4c9f149c2424ec5710 x64
+# grubnetx64-installer.efi.signed
+78ed11f5a1eac5628a0e854bf7fd6de7642d13619cbd2412ce60c3f07d81002a x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+20+deb10u3_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+230ee05286d379aadfaafbb764c61ab3cd2a760f139cb00c2b38346570ddae21 x64
+# grubx64.efi.signed
+a9bde7f125657cb9e30974274b8b2762b2aa7cb86d8de9386a645a49077aaf8e x64
+# grubnetx64.efi.signed
+773c4fee4332fc029698ccb5d8fa55d7b9dc73eb12995bfb66567b30deed5ae1 x64
+# grubnetx64-installer.efi.signed
+1d0ff5d3680cf4353c98dfe766c0608f5ae30bad0fa923846d81ca86233abab8 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+20_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+ac484f162560cd3f83eaf90623b3fbfa2a093b05292ab57fb8ff668403694577 x64
+# grubx64.efi.signed
+1767e0481a19f72d1b33638deaef4661409e25285df025e8149bc6bbce4eee0f x64
+# grubnetx64.efi.signed
+4aa811079e9e59d2a0576a9c9174d18722ab6556cb088c2898bcf0a61dce88da x64
+# grubnetx64-installer.efi.signed
+10e431ea8b1a9e39e53b254d0e839b13a0ecb2a52566aaea9774e0467cc56d92 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+6_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+50b191787cbe9a9e6803171fc2dade8219c38159c0cc81a52e7606c843e58f1f x64
+# grubx64.efi.signed
+f6066e175e9a29bfe51ceeb65ac8d4157e389f1be36997e3fcd1ff6c6aa2d3cf x64
+# grubnetx64.efi.signed
+20a811ef02d85c0ef291c37c39c723d15c36c14d19a24e002371f9852c4bb231 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+8_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+8da15dd44a09cd33f6fac876c38985571fba189d647f91d00490bc15ca28dd94 x64
+# grubx64.efi.signed
+831e6b229bfcb7ebf6e55d3ae9c2a06a27dea9b1d755fa82271a91c69a41ce99 x64
+# grubnetx64.efi.signed
+46e54151a199fb0c990929b323adb76c1dd8217d417ff9ad1cd508531d3a6de6 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.02+dfsg1+9_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+f851c94d179ca17d07471a03958e309a4330b8079dfc402339e7b076f9874d38 x64
+# grubx64.efi.signed
+64460ab7507b4a2261a19060f6846134e292e68002f71ee27448c0c3cdc5ee98 x64
+# grubnetx64.efi.signed
+bd8409999f371329fef36821a53e7c52d83f4e31adbe33ef05e2f9b6bb72282d x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+10_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+c28557cb2d51dbe894a8705af07a3f086d46983c269c65db0db562644d71a9c4 x64
+# grubx64.efi.signed
+90bdff126fa4e77c99a89a29f8e9a9e7e7eb2659da465c157e93880b5a807a42 x64
+# grubnetx64.efi.signed
+bdb46833ae93c186a4a719301d5cfb078c11cc5d1e88cc341c346b10c58c8f5c x64
+# grubnetx64-installer.efi.signed
+ecada77dff34b45b2ec4b852266932e80a215ab0fed02df1685ef0237154513f x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+11_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+1ecb2f30ff67c2cd3caa63981b720b43986089590db3af36de12d9ce09abbe1c x64
+# grubx64.efi.signed
+54f557233a90ac4f6dc646d6881cbf1241436679868ae5087ccb527644a30dcd x64
+# grubnetx64.efi.signed
+872abcc3a9e8b61e42a6ba086b1ad34402c11ee27e7e72a63e9f7ac30e1d301f x64
+# grubnetx64-installer.efi.signed
+d990a6dfda341ef62012ea0fe28b771d450b9f8eee8c3ae9a94e0a064a8fceb4 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+12_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+e37afd68a8763bdec1c07265648b1e178542e5f1ec26e9e5598239d1e9c75bb6 x64
+# grubx64.efi.signed
+aa8b76efb930dbd417c68fee97265dd3a0379c73d3303b38a2a2a3560d361004 x64
+# grubnetx64.efi.signed
+ae5b0ed99bcd661f5c8d52b782dabe7b261421ed834b91cef1bb68a97e44cf9e x64
+# grubnetx64-installer.efi.signed
+554722fe7f7058258c49b7f87fe4ac1206902ec2451321367aceb66be2be0b5c x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+14_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+a09f52586ef0b1efcc1862d5e46f777442f6cf6cf2084baeb7f2b38e074eb397 x64
+# grubx64.efi.signed
+428d1d29ba544e8de6210febeb1cc669a956c996b43adf91d710fcfa505e35e3 x64
+# grubnetx64.efi.signed
+b077857baadb151c9e349f1eb38ad218e155e55a893aca9316728dc11256196c x64
+# grubnetx64-installer.efi.signed
+89283a8ad93e975242410b160c2b8424a7ff643eaa724becaee6d6254dec51e8 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+15_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+b1db19410bda63ee758e8cc3fd16b4ca7c1c352cc4b0e9124a67245256799342 x64
+# grubx64.efi.signed
+97809029ec2b5e8a9250ae6b0bc2d68b9f8984730f8eb0560cbcd54a43afcd2c x64
+# grubnetx64.efi.signed
+561a5ddce08a11d351ea62be8d28fd00a7bcdcf2e9dda40d465c39e94f507cdd x64
+# grubnetx64-installer.efi.signed
+31c713ad7db4f4cb4c9d58d186e6fb315664b065ae29e0e28fcce4f92cf45041 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+1_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+ab8da0a09896f9ab210356c61bd48de47c2e7ad6abb08ab5de2c9147b264e5ea x64
+# grubx64.efi.signed
+70f603a94492f77b0aaebaf7ed064e9f5897c423c516cefe520e204bbeebc1f7 x64
+# grubnetx64.efi.signed
+fc4b4cfb306816d51905def8f8988aaffc95417775d93fc46b070fbb69d77b9d x64
+# grubnetx64-installer.efi.signed
+e2dfeb689e935e438c5ad2c5f02771515ce53679210365ca3793e20831df9fd2 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+2_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+0634c3750da3dcbf941e8573dbea494ed82d3dbcea5030ac60f50e59f50dffbc x64
+# grubx64.efi.signed
+6a90324627ac8c5936f8c702d563ba05b1238c50320c67409db3b3b99941e6db x64
+# grubnetx64.efi.signed
+a3063dd2a30f0f37043209613cb58bfae5c2605e0e064c807bff744a9f861b68 x64
+# grubnetx64-installer.efi.signed
+eb731cdd4fe8bc0f5eb3e226d07f0f353ca15b3e01fd01383e52c43a6eb83149 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+3_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+9d35b71778d839d381b6c98772102ff19273f5e2d75038be0f751bc8a5f1e194 x64
+# grubx64.efi.signed
+8c07e3fc1f5ef2e283cdd44c43251a2f8ad94427fbc963121f9ca27ac336cff3 x64
+# grubnetx64.efi.signed
+75ed7bb9759727e7a1daced47fb861badbd4e66171372314b34add980e5f6f3b x64
+# grubnetx64-installer.efi.signed
+187cead49f41c2d9489cf37f01df901494e8fe106fa3b71ee3f9f1c25b5676fb x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+4_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+67c62b92d123e8dabf43e38b95fbb945776a45654f60c685f06239d47517005b x64
+# grubx64.efi.signed
+2081b098039fa438674eb752f56fa45fe98621143c2a8c412eefe57490907761 x64
+# grubnetx64.efi.signed
+f85d9f3c934f6259cbe2012cde75ef7cd7a13645210f6f070764d18c7587205d x64
+# grubnetx64-installer.efi.signed
+6040ba5a04deea62df207710a3a590a0f51426e4b760c6f16bff01662c2012bd x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+5_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+636f2e9bc9d8ec73b623d692e9ba3789cbd658b0caec6fc0509c6aa8d1067d85 x64
+# grubx64.efi.signed
+bb4e97d80dfc968af9094c87769d159803616a778f4923c26f8684c151984220 x64
+# grubnetx64.efi.signed
+d527122b8b6f294daf47bb3f6abc20a3495454d57a52d3a6e00828409438c826 x64
+# grubnetx64-installer.efi.signed
+223a531bca865d942e3a9e77abf95d21a5aa99fd11c2ba59c7473bc637e2e481 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+6_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+07970410f8f03b473ff34694dd9280d2c264d9268356e677e9946e3b778a94db x64
+# grubx64.efi.signed
+fe3c2a8c459cde5d38cec357905ea971ff54c30254a6cbb4a52521a49400d672 x64
+# grubnetx64.efi.signed
+ed8553dca668348dd8ec3fbeadf491f3fd571af73528a4a3022b88128bf290de x64
+# grubnetx64-installer.efi.signed
+85b058c02afa50ff10f90cfb7a3d6228fa415d0e176a2a17a9222cccaa12d7db x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+7_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+d2bc361c739436de457c4d22bed094932193b10c60089919fddf733c3ba2e0fe x64
+# grubx64.efi.signed
+3ccbb5ccd48d0df9e04dab91b22468a0121157b843d9565be18165ca5301b741 x64
+# grubnetx64.efi.signed
+2e53379217d63f0a1da3d62095f73b6c83ae865d96caa5460ca394aba0cac0a6 x64
+# grubnetx64-installer.efi.signed
+d6dc16ae717c1912c76b33cff9624d1c9cbe5694eee130f169188f658fb7577a x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+8_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+91ddb71a452eeaf0da54828acc65c15b07c455621091e66efa294c08e68bde0f x64
+# grubx64.efi.signed
+bb52dd8a063a15b6786e77941c30ea8f98e991aa3840a88e4eed41f6582b335a x64
+# grubnetx64.efi.signed
+4b80d0deb763d9acf37bf24ccf42cebdf74482c74bfb4d34df1289dc28b2d2de x64
+# grubnetx64-installer.efi.signed
+60ca9e465dc445284ffe1be7e9c968172c89636eaf9192e13a051c673b206681 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04+9_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+7a92fdc865ce1789edbf80754e7c62cf410e418cb5d24f95fbf1453e4868151e x64
+# grubx64.efi.signed
+3c0ac96386fc219dd5d1f0c55a1e6848eac92cec790d3d41e847a76387b00eef x64
+# grubnetx64.efi.signed
+403739eb24ec6588639255f2e5d914608b4f64cdf788256f0138bc91803910c0 x64
+# grubnetx64-installer.efi.signed
+59d51c1213bc20eaa07834a7092d96fd42c0fc4ff40b48e631f1564fd288a7d9 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04~rc1+1_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+6032dfd93b7e6ad7ed438ddd057ce6d50c2163b12a5d8b2cfea6557dc7215283 x64
+# grubx64.efi.signed
+5a2831c1006abc62a1f845d60875115ac4973470d1ecbc9ae167c38a888ec193 x64
+# grubnetx64.efi.signed
+f5f78bbdb76c517e1bb7937d6580af08308def1a9c5673b60525140f49b67f63 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04~rc1+2_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+7e28cc24ecf865d92c8c8cdd51d268fc8a0fbd998e15aff85b635a2c34db2d26 x64
+# grubx64.efi.signed
+54b4c63e31d4982844f6e3a64d8daa00bab5807e2217e1c1ce4f745a2b63eba2 x64
+# grubnetx64.efi.signed
+7b814d01a7bc0fab674832f353f4eb47c05934003611c7f5f323afb1c02c88c1 x64
+# grubnetx64-installer.efi.signed
+e5bf06310db498aee16a9dfdf9911e757f88d3464d9e11c57134ea8873842134 x64
+###############################
+
+###############################
+# Files from grub-efi-amd64-signed_1+2.04~rc1+3_amd64.deb
+# (unsafe chainload)
+# gcdx64.efi.signed
+c9e289be98cd0ac6aa7ed12cc87be8fd9638a665d8261619e914be6b47039bcf x64
+# grubx64.efi.signed
+01479b3bf9c9bb1dfa244266d8638417126568a00cfaf9ac0106ea6ca1ebc9ea x64
+# grubnetx64.efi.signed
+c26197fd9a38c0f150e9b9d190eebabee5965927574c38e8eb2302fa77f74758 x64
+# grubnetx64-installer.efi.signed
+b37d34cb6896e70fd9094b207977525a282c0d275470cfb093321f402beeb347 x64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+10_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+68706ca2dcbc3d26a851f8c83e799ad8d833847319ac7c027ec9b2a36c9ffb7f aa64
+# grubnetaa64.efi.signed
+392e3d96e96cd63945c85338fc82977b5e9e7885e2fc87ad6442ad9e0a60e04a aa64
+# grubaa64.efi.signed
+2c061bbbffa7916f59e1aa1aafe0beecb12addeb7da285ab88cb922aaf3c2c13 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+11_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+aa245861393c4899fe6463d9408e1f0681d65472c90ab84748777b8719753973 aa64
+# grubnetaa64.efi.signed
+08a56d16e4e0e793851deac39e0ec047fc89412d7efd504c5332c853f0ac6220 aa64
+# grubaa64.efi.signed
+5f1446a5ecc1266188e610a6c04b16e7ccec889132c97ffbfe9d5485ebf875a5 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+13_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+fc66d3605ee10ae9410f7186ba506806015f7085da774876e7a310eaf33cdcde aa64
+# grubnetaa64.efi.signed
+d0d6dd75a9aadafd4cb0670e057bf407a622fc651cdb4e3a30c97f724fc1b2a1 aa64
+# grubaa64.efi.signed
+4a27ef7ddb69838da4477a811176841da98c4bc172596e3522cc5f1d94596764 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+16_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+d9e95ad9ea0e0df522f7f41ef9fd9cb5e65cfb0c285465aabd077023e6edb6ba aa64
+# grubnetaa64.efi.signed
+7f5074f42eb92f183fa8748c92992bae8b23a963bc9f8b85692ee7116dc3dcb0 aa64
+# grubaa64.efi.signed
+1c88f32ebd6ecd1a84d83940f78b0d69168a4ff57a1f57fd070e7307899bbc99 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+17_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+44f20309d8b0f661da2c3cf225ba9c0f7b8a2d6ff3885ecba710e5907870ee24 aa64
+# grubnetaa64.efi.signed
+d70b41ea19ea19836198252ac90b1b6fca40ad6baa3911b4a27e886e6423426a aa64
+# grubaa64.efi.signed
+77fb2b05450520eecdbbfa3070fb26405d151b576cd6dffc8cab6a2f0bcff10c aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+18_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+56ae77da800c154e4052bf29948f03b8e7ac6e8de71cb4781fd67e250fe97c82 aa64
+# grubnetaa64.efi.signed
+a23dbe9f19a3c0f90075f5983a0e987017d385cb1efe769e6045dd4e7b36aa13 aa64
+# grubaa64.efi.signed
+57d3b997d68edf62d272fcfbc011fa903e1250a0c6bcc1afa4375fdb8b9df3d2 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+19_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+cde27acb3148c6eb144b7524cbbe23f110260fbeb31efed400ac35a36e5948fb aa64
+# gcdaa64.efi.signed
+159551a611a0fa6eee7dfa58bd3dd3a3a8e1d746c7f1102966f1fd7b27d001a4 aa64
+# grubnetaa64.efi.signed
+22d647e810179938388b2bedcde79fedee66396d751592e51742ccab1ef0bfad aa64
+# grubaa64.efi.signed
+5f59cdac3491d335ea4189963c014543cf867a0820dee1715fc3989816da6fe6 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+20+deb10u1_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+fc25726e6012bec4ca24e2f16c641747f5c68e40eae44b51ac3ca54125ab039e aa64
+# gcdaa64.efi.signed
+c05345ddac3792764685ee8e0dee4a59988a2205515b0bbee1fdc86cbd183dfb aa64
+# grubnetaa64.efi.signed
+a184bd36509cc0f60aca366c6c8008b9208e79c5cf7b44721d2106ef2ca2d673 aa64
+# grubaa64.efi.signed
+b5a6718a6011539b8d52583f41c78733b9e3520bca02d665f080b0fd9cc9b2c3 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+20+deb10u2_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+842a4f0e553de29ac8a4272994f8a6e177b99af6f581f5c406e9132e430b0765 aa64
+# gcdaa64.efi.signed
+1550ad5da63425d0f3a9799ac3eba9de99119ed1c6590e2609b805e33db502bd aa64
+# grubnetaa64.efi.signed
+01124e7d6014ba3195d9ad69065f21f3e752509a6ac59c9dad8e12c9f3ea6007 aa64
+# grubaa64.efi.signed
+25dacd2cd533d0b0fce7661712f87cd243cabe58aca6c0f04b8d5c77d6d66cc0 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+20+deb10u3_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+9a26dcb2fdd5ace465dd00b48b32dfa3348acd374c8d05ba1093259117098e03 aa64
+# gcdaa64.efi.signed
+010374717a5df2b8b39c1f67593e8624e0de96ee51a7cd81a3425cf968a89dae aa64
+# grubnetaa64.efi.signed
+55edc2038e1c1a35d05009653e2c5cb3a11e4a103ac10af64b475317e022065b aa64
+# grubaa64.efi.signed
+20b36be9f650df212f5dcb62cd7b95b7268a3909c46ee4532631e5ac2d577d7e aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+20_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+2fa14fcd9f4a162ca66bfaa6fce79f3ed4eefc848b9d0b5a6409e8d1630bfc1b aa64
+# gcdaa64.efi.signed
+1c5419269634ce3273ce0339d4d5d3d6314c3047b5be34ac5486806a48cb319c aa64
+# grubnetaa64.efi.signed
+c4992785b5e36b1f9968a6baf7982f9cc2fdf899258b9fb82ffa0ad0863ac1ce aa64
+# grubaa64.efi.signed
+51eca7f7d8bb4c7ba5f445e78e88013eaceb7234b5952466eade7fa1c97fca90 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+6_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+28c791047d354d94d2896ced0b70c6264653d22bba861076dfd2db165d061bc1 aa64
+# grubnetaa64.efi.signed
+48938c738643cca4a12ffe9a8e3530a7b5929c3301a847cfe83c6804a7a719f0 aa64
+# grubaa64.efi.signed
+3fb809bd5040412ce55b8527f566679f4b1793da6244d476be598d4212a0594e aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+8_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+9f319a12599a3437adae2d9a9ab9712baceb61dc62e1c23b6706c6733b5a7eb5 aa64
+# grubnetaa64.efi.signed
+2a78c0f77cca12de8cc39d8cdc1d6eac33625f8f03802682ecc258efb984ab2f aa64
+# grubaa64.efi.signed
+0f9eb9e9e3d114d5ea85d68bcadba8479b71d4ef101abdbddaae105a5e6a09fa aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.02+dfsg1+9_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+50380d63966595c5a015d40c9da0981c9726f58de64e24e69a466d3b551a4ee9 aa64
+# grubnetaa64.efi.signed
+69a54b39881878cad2477c93a55a93dc343df0e763d894296f8cb9b20043695f aa64
+# grubaa64.efi.signed
+67a8268d112cb7f2f0cf7da6cdb0353b787da385963a53ea4d48a290e850e4f9 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+10_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+e58595799e89fbee6dabb99f28b0c7b0bf7f69c59d9fd1d52925be22dbb24b4e aa64
+# gcdaa64.efi.signed
+7db7318784c1bf486fa2e24596f1adfc2a239d79aaddc4c5058db3496191f039 aa64
+# grubnetaa64.efi.signed
+6368f7dd128ac7ffdb23ffb8ba96c36f6702d449a8f949abc4c55af7b74d63c1 aa64
+# grubaa64.efi.signed
+953cafee706632a24e6160c7a342a21924d56bdad851212ff4e160789256c7d9 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+11_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+49a2ba5e8fcdc8c89547ab8435fa8d7c11cee2bf881797d29efb9911186f4b4d aa64
+# gcdaa64.efi.signed
+29b5974e232a7ce58176c8b29188f3d954aba1da85cf1563f488710a91de7b3c aa64
+# grubnetaa64.efi.signed
+8e6f2e39dc35599166ad1187b6041e58a341961fe10649f2699f41f431138820 aa64
+# grubaa64.efi.signed
+8542405e2780521f4e258455efd50d1c238a77cb3755ab2f8b955cd8ae5c18f4 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+12_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+26245aa8fa49d2c4b717acb90fafd43e9260e24b8b143d5181f76ca54a10a8e3 aa64
+# gcdaa64.efi.signed
+cfc61808373fc54b1b696690ad4ba6b951b5afcda5597ff14e9219d9e14fa607 aa64
+# grubnetaa64.efi.signed
+2b0bd30da6309f8e268da955f380519aa2e904c1d873b40280232abe761535ee aa64
+# grubaa64.efi.signed
+c52cdb02ea4362bfb20a66dfabdabfc543dfa7f50279e3a4cc2b3545df4803c0 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+14_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+52f037b705da300a517955e0a0c1dcb77c52c998d8c52d10ce60d72130741b80 aa64
+# gcdaa64.efi.signed
+649572f5c42ec8e4d78e0bd47ad6490aea2de443ba3c4112dcce65c9b11b06c5 aa64
+# grubnetaa64.efi.signed
+108c1eeccce8beeb7a2ada1ad40133c5955a42d8f42e0d658c12ca9f84f5f4c2 aa64
+# grubaa64.efi.signed
+f9a2b1524fc3fc955bf7835a76e55c46edabe7ec280be8f1aaf3f527115d71ce aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+15_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+454446e653aee349cd2bc6eb79a43d3d2d2ea6cf134ed2ec1e21f8f5d19a6028 aa64
+# gcdaa64.efi.signed
+d430c2757f4425640dd36cfdca8496c25e0ce72e2cc69a8bbd98282733ec6f66 aa64
+# grubnetaa64.efi.signed
+f156da556c08dd5516fde3c39d59080aa0b580a05f45874e9a9d288f2e8f6530 aa64
+# grubaa64.efi.signed
+75eacb723cfcb621702db6c21b51d9d618d89ab87994d7621b227e89dc852b1e aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+1_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+aabbda6e2c80b2bbdd0dc8c56351f278c1c048ded0ddb89d9ba6ebc401c6f5e7 aa64
+# gcdaa64.efi.signed
+6ce7e4a55c47587125001795381f79125b17ce5b97a4ca8eb1a9b50867588633 aa64
+# grubnetaa64.efi.signed
+8079e03caf2cae406990b7394ab64ff31dc7817acc0f95460af73f79313cb177 aa64
+# grubaa64.efi.signed
+e3443d0331302352e7974e19c77372606ad379e75be87fe6ad0b02bceca8e0c0 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+2_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+18c9ef47f56afa717403f48b9faea79787a1e072f881f5bbdfa87b0a7875e9a2 aa64
+# gcdaa64.efi.signed
+75781365265f50cda6057c1ff221800954c1b521c1b95fecb23deddece330e90 aa64
+# grubnetaa64.efi.signed
+df4b7c255861c92db01c1ed0fb641af93b2b484c2a99c1a41b7dbbb09d36f1ca aa64
+# grubaa64.efi.signed
+a5309bd57b3a7a914fc56c826b39ab7d76eff431bcbe068a6d33e15a568289be aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+3_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+0bb4b98103b7019c54795e2703d4537e3deb4e911d1656050d04e2b35b2f4fa1 aa64
+# gcdaa64.efi.signed
+62cefbca0ef5026471ee8a349918976b866b35d3548ae02fdbd84430460a81e4 aa64
+# grubnetaa64.efi.signed
+9a6e34fb1eb4050ef7d88783c737cff882dd190948ccad8f64e43ae90fb49443 aa64
+# grubaa64.efi.signed
+6e8d88321cd4ad443530e663c0a1474ca07de20d68121279b41e9a8bfd14ae44 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+4_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+42e739c433d37f31139d0645b5a9736857747dc5fbac667242eb9100e84c7471 aa64
+# gcdaa64.efi.signed
+3a75240a23823a084c75919bd1d85e7d8647a041ea36f53a3f684b7c7d77c85a aa64
+# grubnetaa64.efi.signed
+7c5ed1931e7c73d65cf849d0a39e3d848b65c09ad0f365b6d30f82a3a6ddc3a4 aa64
+# grubaa64.efi.signed
+802fdff773bfd3ee8800c72666e2182bc312fc4d9559dfe3a473e0f3e49d50f6 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+5_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+988b61ac65d2dac3699c8297b90c2b33db89554dea50ae71101e34f1985a9a17 aa64
+# gcdaa64.efi.signed
+4ec8abd2028d4f9cbaaa1529f627593658347e954119cf4218bbd10b26c9b84f aa64
+# grubnetaa64.efi.signed
+64d41bf8cb984e09c7bb59cbeb16cce4289c3e8f780cc4d92868a4f1080f6540 aa64
+# grubaa64.efi.signed
+3f5bda50e30b4b509d736a52bc49a8f97736bf9f017185487f1d97c641ebc9cd aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+6_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+89b285aadd0c01a63dab295e9ce2483dbdcba5f39e0b5cc6bea0ab32083edca4 aa64
+# gcdaa64.efi.signed
+1329aadb9747665af656aacd1f773b134c9e976708d3122d0434bbcc36234091 aa64
+# grubnetaa64.efi.signed
+be9dd50c503d7863869918912d07906d2ab82a9e0384a705aaf6f84731f481a3 aa64
+# grubaa64.efi.signed
+f2f47ded847ab42bdda27dae05c8ff2b23795ce08a893ee52b58e97e69e6299e aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+7_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+f3bea191c76b49031984a6cba7e2e604ca14b7251ddb412929946b9a6e7b718b aa64
+# gcdaa64.efi.signed
+99b2f423c04de4475c1cd62d7db60724cb26c15686471efc0366cc68df21f043 aa64
+# grubnetaa64.efi.signed
+d74621dc3c81ddd385128bfe02df1c7446c8f72f1832d839b276782b4612ec35 aa64
+# grubaa64.efi.signed
+125c2c2954922899cc568f03dcfd0768162aef8cf3621f5919078abd85895b48 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+8_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+4d51ee0ab75a2499ac9f78f67305f5db54292ffa5497333c22a2bf617506aa00 aa64
+# gcdaa64.efi.signed
+7984b6e2f7795e33372fd61c547f3d5fedc3088f769aed1cb8fa8f524244656b aa64
+# grubnetaa64.efi.signed
+da49eb9b89d4efa92544fb282bbeb109cef3d51eb773f4844c0fda92767c3297 aa64
+# grubaa64.efi.signed
+7ef1088105ceec7602564ef2d6bffacb50cd4b36aa4f0c5b109197df1faaefac aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04+9_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+0e21d3ae473cf272cefe18d392ccee11c0bb3ca1d5aa1f230f0d9af303fa4fd2 aa64
+# gcdaa64.efi.signed
+bac83b595fc70bec02d77d6914cae34abf55e1dbc27e1956b83f3178b453fca3 aa64
+# grubnetaa64.efi.signed
+75814f4022b4a05e8301fc2dc69f077e3bef6b4e37ea6d713e61e73e49dab82e aa64
+# grubaa64.efi.signed
+e57b17e4b24ddfcb5b884c5599dee2ce371632cfffb802cfd7389141c87caecc aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04~rc1+1_arm64.deb
+# (unsafe chainload)
+# gcdaa64.efi.signed
+700583bb946209ce10492919983e7485c8b77eac02546cc50f6cea653ce47ee6 aa64
+# grubnetaa64.efi.signed
+f7c122cbbcecf56f758a24db0d508c4928426a6b89c6e1b23a2b3ad3b36120e1 aa64
+# grubaa64.efi.signed
+619566ff76fcbc69be425d05978ea66594cad057a014e47c2bf47c7ba2b8f823 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04~rc1+2_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+3535d8cadf8990b611e074dca2e3367f3e0564ec5147400cc3d2c70f78fbffad aa64
+# gcdaa64.efi.signed
+9f4971fcc79e395774d09a260ac2c8ce99be84910562bf6f813b259498f1f5b1 aa64
+# grubnetaa64.efi.signed
+79167c83c2a1d56cc9dd95f2dad9e89c84a4b29b75cb274ca9fc0a9fb508d73f aa64
+# grubaa64.efi.signed
+20d7527030b4ff660f45d332b3878d2ca832d100a7ede713f9276a7801c15dc6 aa64
+###############################
+
+###############################
+# Files from grub-efi-arm64-signed_1+2.04~rc1+3_arm64.deb
+# (unsafe chainload)
+# grubnetaa64-installer.efi.signed
+62e67264c891eac0a0e03353bb0688dc81822e1fa8074eeb67b0dc0faabc6ab8 aa64
+# gcdaa64.efi.signed
+234f2e35a9828d71dfb75f8dc2cf4055debf3793382173f1bd822b253788f51e aa64
+# grubnetaa64.efi.signed
+a4b83fad2c6f31166c19287817f19da0e0c32d212037440497c37301f8110cb6 aa64
+# grubaa64.efi.signed
+9c27fa6c35763d87b884979bbb9cd1dba30736e79919f9075cced9036899a164 aa64
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+10_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+7452267ea21a3db7ab7ea792d1e38175842ec836780829d080b8c87f2fec96ab ia32
+# grubia32.efi.signed
+9d382d8526a72eed850154794418946eb2dc9406444398c230934b89c3e27ea8 ia32
+# gcdia32.efi.signed
+00be056fd3dc31c820b82eecc80ea3c42f2938db4846d2395f607c5c42f11c75 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+11_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+1cc7feb306e9bf2b5f1f146956b1c4b54f63998dd3afe680d59826afc4508a71 ia32
+# grubia32.efi.signed
+61b9cc457b812b8a846479caba8988983dd8eeee9ce91697a11fbf5d9356adcd ia32
+# gcdia32.efi.signed
+ba34defc3a530be8b3b1096247d430dd2afbb22e0dbd01fad9b8b4b163cfdc1c ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+13_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+bbbbc7cc72f5422bc47df212f3465fa0c97541196c09722b4f09a7606893c8ef ia32
+# grubia32.efi.signed
+ba9be59351251d9ade96b0985ac97976b62b9b898b5bf8e2bc54078b49c36334 ia32
+# gcdia32.efi.signed
+78fc0e8cf04214b66755a22bbc4a1c741c12aa84568473bcb2eeeefaa9585157 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+16_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+749c1c47b959367aeed4444fca7eac834372843582a4f0036cbcb91145a8c92a ia32
+# grubia32.efi.signed
+094d5f2f4ed7e17fc247345e4e3d9943248e46540b1a7e93d69c8a4f298d82ed ia32
+# gcdia32.efi.signed
+beaa24fc8bc80b201780a78f6f3daa76a091f0e8bf868070849c3b2cdc689cf3 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+17_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+7287a09fc1c1bcc5679cc10df3ae6c8d0581c9cec87cfdc7f17219951b65044f ia32
+# grubia32.efi.signed
+a8328c2ebd02e9421d4e479ca89f4679162117cf7cc665a482b08561296a3e94 ia32
+# gcdia32.efi.signed
+ade048b70c915c68543a3dbf8f9671e1c6d71713587018be8afee1928e952816 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+18_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+c73ce912ef556f2bb79e5b196f3bb60d4193c70110cb081b557902716979837a ia32
+# grubia32.efi.signed
+4a6db01586f8b3b7afcabe1aeb9b5ee5ceaf687b2edd035f9391417280b7ae05 ia32
+# gcdia32.efi.signed
+3351926316357884fbb76508de54defb856a2a6a5316288b357a94124f035b6e ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+19_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+1e3e505052537f64cd600832015f2fcffeb3f737825fba97a695fb22c34ae88a ia32
+# grubia32.efi.signed
+e6e57a4e1efb1f778f8b6c21c06c2b6a7e961723124a4ec1e635ea5dc6a14e37 ia32
+# gcdia32.efi.signed
+58699d4b3cefc1ec876aafb49f96d82bf6b8be1c9c2d57c2fe022d5b0267ec6b ia32
+# grubnetia32-installer.efi.signed
+cd940d522723c40a3ff68988d0e6f9fe8c5378e09f2ad008f8016110a400cc08 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+20+deb10u1_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+bd995ba8f31b08d4ad0bbdcc77458078fcfe0ba6ab26790140ae79ff06d0e208 ia32
+# grubia32.efi.signed
+5689179d69d28d44f2692fd194cd0383cdedb06dee920418604d7ce59e620b0f ia32
+# gcdia32.efi.signed
+125d64eb8e9dcd6d1ce0b827678e297b7970e1ccc5c9aa4a40e66f228424a8e7 ia32
+# grubnetia32-installer.efi.signed
+812867c5f370926bf008d1d5b725c6b84285c9d573c7a1a763ffb766b690d309 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+20+deb10u2_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+d7e03fb15e8b414edffea34628af51bc6d8531533fff15c4d15b36ec15c4722e ia32
+# grubia32.efi.signed
+7721d3e8fb890e181e662f3f0334209b928bc8c6d63221669eb2ca252a21d898 ia32
+# gcdia32.efi.signed
+4f3c15dc10786b2c3909f9e7f47e90ce38e05ff501ac7c43d97d6ecb14cdf188 ia32
+# grubnetia32-installer.efi.signed
+9505fbe9e6f6649c01512d223edccbe48a8547579a069901bbfa569107d0ff5d ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+20+deb10u3_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+0a7fa9e881db701caef734b06c3df2ffe35120387bf70583e5b6513fdfc3cbba ia32
+# grubia32.efi.signed
+628ed2562d3a55b06f6f85687466d336571da6e8bfcd152dcfd99e283dd3d3cf ia32
+# gcdia32.efi.signed
+260d6f83057501f828a1228db30e31ccc2759a8ad22e31820da5d31962de072c ia32
+# grubnetia32-installer.efi.signed
+1adeb1ab647c92e4f84b5437e0761ea2a68ee9e2d23c09401618c11460d1df2e ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+20_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+a842279a836922c747d1b3b7c7e889a4f452e7f41951182ef8674b7c51a87b6c ia32
+# grubia32.efi.signed
+4d31740e6535ceb40c1ba94cf134e01562ac2948c20b197362d4a3d95a20aba2 ia32
+# gcdia32.efi.signed
+b79d6722df9efb56dd68139532869a0db0a71f098e0b4e255bb9eefebec1370e ia32
+# grubnetia32-installer.efi.signed
+5950debedb0e285bc044f7c38d61246b665dd97d7b7fee7b37f305fc0284e851 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+6_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+1a3f406a13f18091d4b0cacf73243c2412c0b6f680d77b7d3d3fd2474eb4edee ia32
+# grubia32.efi.signed
+d1b78e60448b4cd143b8082fcfdd568c10f6f3f88c66caae8544d28235f97890 ia32
+# gcdia32.efi.signed
+3a692049c326d35d8142ebad5d310fbfb43b39a890663d032343c156ddda8014 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+8_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+43aa9a91458f8e568c0d56825a5afb8363feaaf0ad41001a2ec8a9f6f309c84e ia32
+# grubia32.efi.signed
+3ae847080c6b795439cd8ef3b321b55a5f0c3ef7e96c56d6dd2270989e954f6a ia32
+# gcdia32.efi.signed
+707deb8c3dd037cf99859eb06d29ea099bd1a5eb98adb90bd51431750d047552 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.02+dfsg1+9_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+e77b11aa769dac9c94c3ded38b9b9d758411b2513ed3494dc3f5b5e9813de36f ia32
+# grubia32.efi.signed
+26637a34efbc7fa1e4ad1798369470ee007de56f00248380f767957491d6a8b7 ia32
+# gcdia32.efi.signed
+e3f4f529e7c59b899c05aff8d8a474fd281906c82351d52be72605e3f26ba393 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+10_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+9378aa2c6413177be1e9b5cac3dd2d713c1441aacf8ad089749a5ea38e562af3 ia32
+# grubia32.efi.signed
+77c579947aca8318f8d8e028233e61a38ebf11a813f709bd2a973a38b07719b2 ia32
+# gcdia32.efi.signed
+221b56b199620a0161fddc542df8c25b31de9ae568431441676ec46ea7b676bb ia32
+# grubnetia32-installer.efi.signed
+7fbdcd5e4462e47fb554100ea24032b2227e7244ffeb9849a029e4d7a04d04fb ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+11_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+89c74c14c7edc931552b20d6633c04d5dec8e30416dfe327959fb94135eb8e1c ia32
+# grubia32.efi.signed
+757635d4238cfee75d55f727fae624318873b0dcde345c3ff279bac152988d93 ia32
+# gcdia32.efi.signed
+8fbe67480fa29d994a5469606af1210c390dd96726d2f3d134fe5a2e73bcf42f ia32
+# grubnetia32-installer.efi.signed
+5da400ebab865de8349d40b51cd1628bfb9f8344d89ac7cbf18305f812451b75 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+12_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+6fc2731b9e8fecb3c911cbc6b8e768d2309f0cb37e5162f0d1ed30b53d91e8b6 ia32
+# grubia32.efi.signed
+f1d633c3e2c22839a28394f50c818985237ce7b2c8f00fd06bcce6f0b6f283ea ia32
+# gcdia32.efi.signed
+9b61c3f47a34e0f80b7c3fba54429fdc217faaac770c95e249da8320c0b64c09 ia32
+# grubnetia32-installer.efi.signed
+6af1084ff98f474180dade800676afeefab4a1f376fff66d70863ff5876bb94d ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+14_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+d918de4f46f81dacdab3ab940561c6da85004f6aa378c9b71e8c10318355ba2a ia32
+# grubia32.efi.signed
+8045e3319b25772bc910175f9750437066dcc284505c31c3da42382eb4288574 ia32
+# gcdia32.efi.signed
+aa1911408d66df101b469212bdff5ecc3f5b1255495958bbf936cc6ca9bc20d2 ia32
+# grubnetia32-installer.efi.signed
+59a2a0ca9fc7b1b35c0e2e527676b602ea8b106a308431bc51624cb985f72a1d ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+15_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+32d3ea4d596050771871b90964b58c7ae566ef9a2bfa99faec310b42abcfe8e1 ia32
+# grubia32.efi.signed
+8a7d726adedb427287ee2bd68b7a42a46a72debf63be2e5f103acd68a38b19e8 ia32
+# gcdia32.efi.signed
+c10be24afa7b227ac22ecdd73bfb78706574fd5371e2327a86e063aff43f5b1b ia32
+# grubnetia32-installer.efi.signed
+b98f4684b57f0746195e61a69ec2c19dcd35622e50f7ed537ee7231608fe5c68 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+1_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+f80c89fa33e78cc8091cf98a5abc7d152e225aa660fcb0f238d3ff9ddf3a020e ia32
+# grubia32.efi.signed
+152b22b0ff3d388cfaa96c93338ce49b21ec05025fb019daed5bc65fce4eaefe ia32
+# gcdia32.efi.signed
+b9964cb6c7b542044a6a23d5ee0f813b80e1a42a4f98cf61e10e851cd37c8b91 ia32
+# grubnetia32-installer.efi.signed
+1a6c8dc5bf614a4c4d8c29a87aa1ac10cb5c2bf48abcc36e46854a51758c295b ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+2_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+7d4dc3ab547f1ab3903659a214949e971544c89cf19d60364e218bfead8236a4 ia32
+# grubia32.efi.signed
+f9696e35544318378b7c3084f4d0c6857881bc1f0531af8642d70b1aa71b3cb1 ia32
+# gcdia32.efi.signed
+e1d90dac87530eecf15e137d1c711bf0ca5b173922848b7e694a01396a5dd903 ia32
+# grubnetia32-installer.efi.signed
+56b6ee99c7339eb7a3cc80e2470484abec52853ff358520f7a0c995c076fcd19 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+3_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+acea5f24beb615aa06662d4aa60737e65862623d398ff9f65e55bb56321e9330 ia32
+# grubia32.efi.signed
+a4b36bf9058f9ad9f7a750d29afdb85333b2636c636f0ae3618b10504e9db268 ia32
+# gcdia32.efi.signed
+e3608dea31c04c9f22c539f80a8f901bea05d3d973067d3352d2acd81c02aca3 ia32
+# grubnetia32-installer.efi.signed
+0d3d25beed1aa45c1efdb1aefc7fc22cd054acf1332a3295d2774a0e74a71bad ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+4_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+b02003597875e9467371460b229079190ba1d710825f22c3e5604bca2cfbbb00 ia32
+# grubia32.efi.signed
+237c5664bcfe43a226c623037e44e27745de4a70453151fbde60cb1eacc95efe ia32
+# gcdia32.efi.signed
+156169f3152284f50b1bb43f9bac73660c977f8a075a525aaee46ec0b293e8ef ia32
+# grubnetia32-installer.efi.signed
+645e7cec1e21857df57a59afd32e927c89a42e4f70494c44b941bf9b94ed4dde ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+5_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+73be4d9d26c6ecaaadd7021cf0777b7cb574d1ac3e029579bf59f4ccb0fa9b11 ia32
+# grubia32.efi.signed
+7719036ecd4a8462f2538ea13dec2a4949853f5672ea2f2c06a35e9d96759558 ia32
+# gcdia32.efi.signed
+c721a3db87af7278ce08e7643438a41a1185c2b322f7405f256df33c4cf69059 ia32
+# grubnetia32-installer.efi.signed
+ccb8877c61a22fedf8afc7160ee06c48f5e72c2e3d88364c9e3ed37bb41efa06 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+6_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+2dd444943e90e80e6a81038f1a185ad73dfe843b5fa09e19b8efa55b1eb32cb6 ia32
+# grubia32.efi.signed
+dd49bf0918188919552ce1a5885e1eb6181e5b829fa99e47f8a00b3ec065e51b ia32
+# gcdia32.efi.signed
+42f9512280205b015768762fab0baa03fc0f6a5c148fca84dff3de0d937693f2 ia32
+# grubnetia32-installer.efi.signed
+c6446f1cf18fe664ae79510893ae6e9fcf739b20886569df719065a0ff164ba7 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+7_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+58f15365ffea1e50ba1aec6be5e5cbfe373fcdad20c5777b69b702c621f216ee ia32
+# grubia32.efi.signed
+645fdf98cbfbef7c4da233da1c422df6c4090518abfae12c71061beac03c1fb1 ia32
+# gcdia32.efi.signed
+1d8bb3f36c97582912dbfa3ede92a66f34e30ba660ae5f3b0a5abd35a3d1efec ia32
+# grubnetia32-installer.efi.signed
+564ae6e6fdd724b632392e7f4faeca1dd7590da892e42cf2dbf3a4ed2d72d946 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+8_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+afb502ddae5e08d14db362a055059c2b7ed4e66ca88b2a251698081c58afd307 ia32
+# grubia32.efi.signed
+8413fb83d7eea5da8c6f008b025a4010de341b2bd5a1a884ee7ac834ee127cea ia32
+# gcdia32.efi.signed
+43fc800441d591739379e94f45fecfb3fc6d945ce5664de5a846295fd76599ac ia32
+# grubnetia32-installer.efi.signed
+5e62e820c1894504945cc85d3bdb9ee16098509dcee1488347f8f6648e59b27a ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04+9_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+ac4512b047239ef19e6448dfeaaca0326b26abfcb994339ed494008c10027881 ia32
+# grubia32.efi.signed
+bc2d6e36922df0718539a81d85e5d5d6616c1ad68adaf1cab1bb1455713975bb ia32
+# gcdia32.efi.signed
+9033ba45fff4004e5432d165cb199fd881fc793db4b580ad583cb089a8ed74f3 ia32
+# grubnetia32-installer.efi.signed
+346c335d0bf65561fe2ef0e828ee4053bf5a6977e6304d61571cc07e3c4ad288 ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04~rc1+1_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+818719068ad63ecdbc3f733c5db753b4a1df40deead6540ef18cfa38d9d5eec2 ia32
+# grubia32.efi.signed
+3554a98b3eee31e675af05db8e89964e2fbb981020e033e5eed456d71ad8caaf ia32
+# gcdia32.efi.signed
+58c6c0a67b94a2ad1c6236b85cbedb28ac3b2c83f9782519d88683fe941692bc ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04~rc1+2_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+fefdf4e9b76933daa0b333d892fa141181dd12678ec12230407fcd686a11b80e ia32
+# grubia32.efi.signed
+b58a2676cfb8523d61b058bbb3eb464ef9669b0f56303e59ecc077a638e8f600 ia32
+# gcdia32.efi.signed
+dac8b9c8818ec36e5d47551b94d22a4a2dd1112578264931575054e484707ddd ia32
+# grubnetia32-installer.efi.signed
+af50894a20b1fc0f5849507eac5eb1915f36a6d95f3942b749d69286360c39da ia32
+###############################
+
+###############################
+# Files from grub-efi-ia32-signed_1+2.04~rc1+3_i386.deb
+# (unsafe chainload)
+# grubnetia32.efi.signed
+ca011153062ffb166a3ca71619a26eef56da7447cc9434705d80d635ba9276ec ia32
+# grubia32.efi.signed
+38252c6c6c6e40a89a277447ce8913d1c15d3b59557e26bc2194151b4bcfce3d ia32
+# gcdia32.efi.signed
+26d1ed55a262b3c7fd45bf5babac38e898eb9a5503002e132d50ac5b6950c54a ia32
+# grubnetia32-installer.efi.signed
+df85a256b46cf9f3bac196d89f3e5456775d845111e89a5bcf7ac2bec794fac6 ia32
+###############################
+

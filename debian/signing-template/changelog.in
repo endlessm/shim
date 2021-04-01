@@ -1,0 +1,11 @@
+shim-helpers-@arch@-signed (1+@version_mangled@) @distribution@; urgency=@urgency@
+
+  * Update to shim @version_binary@
+
+ -- Debian signing service <ftpmaster@debian.org>  @date@
+
+shim-helpers-@arch@-signed (1) unstable; urgency=medium
+
+  * Add template source package for signing
+
+ -- Philipp Matthias Hahn <pmhahn@debian.org>  Sat, 07 Apr 2018 17:16:27 +0200

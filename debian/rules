@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+include /usr/share/dpkg/architecture.mk
+
 # Other vendors, add your certs here.  No sense in using
 # dpkg-vendor --derives-from, because only Canonical-generated binaries will
 # be signed with this key; so if you are building your own shim binary you
@@ -7,16 +9,22 @@
 ifeq ($(shell dpkg-vendor --is ubuntu && echo yes),yes)
 	cert=debian/canonical-uefi-ca.der
 	distributor=ubuntu
-else ifeq ($(shell dpkg-vendor --is endless && echo yes),yes)
-	cert=debian/endless-uefi-ca.der
-	dbx=debian/endless-uefi-dbx.esl
-	distributor=endless
-	oslabel="Endless OS"
-COMMON_OPTIONS ?= VENDOR_DBX_FILE=$(dbx) OSLABEL=$(oslabel) FALLBACK_VERBOSE_WAIT=3000000
+COMMON_OPTIONS ?= ENABLE_SHIM_CERT=1 ENABLE_SBSIGN=1
 else
 	cert=debian/debian-uefi-ca.der
 	distributor=debian
 endif
+
+deb_version             := $(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+upstream_version        := $(shell echo $(deb_version) | sed -e "s/-[^-]*$$//")
+plain_upstream_version  := $(shell echo $(upstream_version) | sed -e "s/+dfsg.*//")
+
+DBX_LIST = dbx.esl
+DBX_HASHES = debian/$(distributor)-dbx.hashes
+SBAT_IN = debian/sbat.$(distributor).csv.in
+SBAT_DATA = data/sbat.$(distributor).csv
+
+include /usr/share/dpkg/architecture.mk
 
 ifeq ($(DEB_HOST_ARCH),amd64)
 export EFI_ARCH := x64
@@ -24,30 +32,54 @@ endif
 ifeq ($(DEB_HOST_ARCH),arm64)
 export EFI_ARCH := aa64
 endif
+ifeq ($(DEB_HOST_ARCH),i386)
+export EFI_ARCH := ia32
+endif
 
-COMMON_OPTIONS = \
-	RELEASE=15 \
-	COMMIT_ID=a4a1fbe728c9545fc5647129df0cf1593b953bec \
+COMMON_OPTIONS += \
+	RELEASE=15.3 \
+	COMMIT_ID=XXXX \
 	MAKELEVEL=0 \
-	EFI_PATH=/usr/lib \
 	ENABLE_HTTPBOOT=true \
-	ENABLE_SBSIGN=1 \
 	VENDOR_CERT_FILE=$(cert) \
+	VENDOR_DBX_FILE=$(DBX_LIST) \
 	EFIDIR=$(distributor) \
+	CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
+	CC=$(DEB_HOST_GNU_TYPE)-gcc-10 \
 	$(NULL)
 
+$(DBX_LIST): $(DBX_HASHES)
+	./debian/generate_dbx_list $(EFI_ARCH) $< $@
+
+$(SBAT_DATA): $(SBAT_IN)
+	rm -f $@
+	set -e; \
+	sed -e "s/@DEB_VERSION@/$(deb_version)/g" \
+		-e "s/@UPSTREAM_VERSION@/$(plain_upstream_version)/g" \
+		< $(SBAT_IN) > $(SBAT_DATA)
+	# If we have an empty $(SBAT_DATA), delete
+	if [ ! -s $(SBAT_DATA) ]; then rm -f $(SBAT_DATA); fi
+
 %:
-	dh $@ --parallel
+	dh $@
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
+	rm -f $(DBX_LIST) $(SBAT_DATA) sbat.*.csv
 
-override_dh_auto_build:
+override_dh_auto_build: $(DBX_LIST) $(SBAT_DATA)
 	dh_auto_build -- $(COMMON_OPTIONS)
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/tmp -- $(COMMON_OPTIONS)
+	# Remove the copy of the source that's installed - we have git
+	# already...
+	rm -rf debian/tmp/usr
+	# And remove the extra removable-media copy of shim too, it's
+	# not needed for our build and causes debhelper to complain
+	rm -f debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
+	./debian/signing-template.generate
 
-override_dh_fixperms:
-	dh_fixperms
-	chmod a-x debian/shim/usr/lib/shim/shim$(EFI_ARCH).efi
+generate-gnu-efi:
+	git -C gnu-efi archive --prefix=gnu-efi/ HEAD | xz -9 \
+		> ../shim_$(plain_upstream_version).orig-gnu-efi.tar.xz

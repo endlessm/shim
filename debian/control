@@ -1,16 +1,26 @@
 Source: shim
 Section: admin
 Priority: optional
-Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
-XSBC-Original-Maintainer: Steve Langasek <vorlon@debian.org>
-Standards-Version: 3.9.8
-Build-Depends: debhelper (>= 9), gnu-efi (>= 3.0u), sbsigntool, openssl, libelf-dev
-Vcs-Git: https://git.launchpad.net/~ubuntu-core-dev/shim/+git/shim
+Maintainer: Debian EFI team <debian-efi@lists.debian.org>
+Uploaders: Steve Langasek <vorlon@debian.org>, Steve McIntyre <93sam@debian.org>
+Standards-Version: 4.4.1
+Build-Depends: debhelper-compat (= 12),
+	       gnu-efi (>= 3.0u),
+	       sbsigntool,
+	       openssl,
+	       libelf-dev,
+	       gcc-10,
+	       dos2unix,
+	       pesign (>= 0.112-5),
+	       xxd
+Vcs-Browser: https://salsa.debian.org/efi-team/shim
+Vcs-Git: https://salsa.debian.org/efi-team/shim.git
 
-Package: shim
-Architecture: amd64 arm64
+Package: shim-unsigned
+Architecture: amd64 arm64 i386
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Breaks: shim-signed (<< 1.33~)
+Conflicts: shim (<< 15+1533136590.3beb971-3~),
+Replaces: shim (<< 15+1533136590.3beb971-3~),
 Description: boot loader to chain-load signed boot loaders under Secure Boot
  This package provides a minimalist boot loader which allows verifying
  signatures of other UEFI binaries against either the Secure Boot DB/DBX or
@@ -18,14 +28,23 @@ Description: boot loader to chain-load signed boot loaders under Secure Boot
  infrequently-changing binary to be signed by the UEFI CA, while allowing
  an OS distributor to revision their main bootloader independently of the CA.
 
-Package: shim-efi-image
+Package: shim-helpers-amd64-signed-template
 Architecture: amd64
-Depends: ${misc:Depends}
-Description: boot loader to chain-load signed boot loaders under Secure Boot
- This package provides a minimalist boot loader which allows verifying
- signatures of other UEFI binaries against either the Secure Boot DB/DBX or
- against a built-in signature database.  Its purpose is to allow a small,
- infrequently-changing binary to be signed by the UEFI CA, while allowing
- an OS distributor to revision their main bootloader independently of the CA.
- .
- This package provides the files that go in the ESP.
+Depends: ${misc:Depends},
+Description: boot loader to chain-load signed boot loaders (signing template)
+ This package contains template files for shim-helpers-amd64-signed.
+ This is only needed for Secure Boot signing.
+
+Package: shim-helpers-i386-signed-template
+Architecture: i386
+Depends: ${misc:Depends},
+Description: boot loader to chain-load signed boot loaders (signing template)
+ This package contains template files for shim-helpers-i386-signed.
+ This is only needed for Secure Boot signing.
+
+Package: shim-helpers-arm64-signed-template
+Architecture: arm64
+Depends: ${misc:Depends},
+Description: boot loader to chain-load signed boot loaders (signing template)
+ This package contains template files for shim-helpers-arm64-signed.
+ This is only needed for Secure Boot signing.

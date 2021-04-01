@@ -1,0 +1,22 @@
+# debian-dbx.hashes
+#
+# This file contains the sha256 sums of the binaries that we want to
+# blacklist directly in our signed shim. Add entries below, with comments
+# to explain each entry (where possible).
+#
+# The data in this file needs should be of the form:
+#
+# <hex-encoded sha256 checksums> <arch>
+#
+# All other lines will be ignored. I'm using shell-style comments just
+# for clarity.
+#
+# The hashes are generated using:
+#
+#     pesign --hash --padding --in <binary>
+#
+# on *either* the signed or unsigned binary, pesign doesn't care
+# which. See the helper script block_signed_deb for an easy way to
+# generate this information.
+
+# ... This file intentionally left blank for now ...
