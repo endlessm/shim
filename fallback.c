@@ -936,50 +936,6 @@ get_fallback_no_reboot(void)
 	return 0;
 }
 
-static EFI_STATUS
-set_fallback_no_reboot(void)
-{
-	EFI_STATUS efi_status;
-	UINT32 no_reboot = 1;
-	efi_status = gRT->SetVariable(NO_REBOOT, &SHIM_LOCK_GUID,
-				      EFI_VARIABLE_NON_VOLATILE
-				      | EFI_VARIABLE_BOOTSERVICE_ACCESS
-				      | EFI_VARIABLE_RUNTIME_ACCESS,
-				      sizeof(UINT32), &no_reboot);
-	return efi_status;
-}
-
-static int
-draw_countdown(void)
-{
-	CHAR16 *title = L"Boot Option Restoration";
-	CHAR16 *message = L"Press any key to stop system reset";
-	int timeout;
-
-	timeout = console_countdown(title, message, 5);
-
-	return timeout;
-}
-
-static int
-get_user_choice(void)
-{
-	int choice;
-	CHAR16 *title[] = {L"Boot Option Restored", NULL};
-	CHAR16 *menu_strings[] = {
-		L"Reset system",
-		L"Continue boot",
-		L"Always continue boot",
-		NULL
-	};
-
-	do {
-		choice = console_select(title, menu_strings, 0);
-	} while (choice < 0 || choice > 2);
-
-	return choice;
-}
-
 extern EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab);
 
@@ -1051,21 +1007,6 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 			try_start_first_option(image);
 		}
 
-		int timeout = draw_countdown();
-		if (timeout == 0)
-			goto reset;
-
-		int choice = get_user_choice();
-		if (choice == 0) {
-			goto reset;
-		} else if (choice == 2) {
-			efi_status = set_fallback_no_reboot();
-			if (EFI_ERROR(efi_status))
-				goto reset;
-		}
-		VerbosePrint(L"tpm present, starting the first image\n");
-		try_start_first_option(image);
-reset:
 		VerbosePrint(L"tpm present, resetting system\n");
 	}
 
