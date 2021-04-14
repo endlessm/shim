@@ -1,1 +1,2 @@
 fix-broken-ia32-reloc.patch
+MOK-BootServicesData.patch
