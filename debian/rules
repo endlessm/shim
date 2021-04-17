@@ -37,7 +37,7 @@ export EFI_ARCH := ia32
 endif
 
 COMMON_OPTIONS += \
-	RELEASE=15.4 \
+	RELEASE=$(plain_upstream_version) \
 	COMMIT_ID=XXXX \
 	MAKELEVEL=0 \
 	ENABLE_HTTPBOOT=true \
