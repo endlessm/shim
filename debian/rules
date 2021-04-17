@@ -65,7 +65,7 @@ $(SBAT_DATA): $(SBAT_IN)
 
 override_dh_auto_clean:
 	dh_auto_clean -- MAKELEVEL=0
-	rm -f $(DBX_LIST) $(SBAT_DATA) sbat.*.csv
+	rm -f $(DBX_LIST) $(SBAT_DATA) sbat.*.csv BOOT*.CSV test-csv test-sbat test-str
 
 override_dh_auto_build: $(DBX_LIST) $(SBAT_DATA)
 	dh_auto_build -- INSTALL=install $(COMMON_OPTIONS)
