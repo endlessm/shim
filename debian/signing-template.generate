@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e -u
+
+distribution="$(dpkg-parsechangelog -S Distribution)"
+urgency="$(dpkg-parsechangelog -S Urgency)"
+date="$(dpkg-parsechangelog -S Date)"
+version_binary="$(dpkg-parsechangelog -S Version)"
+version_mangled="$(dpkg-parsechangelog -S Version | tr '-' '+')"
+
+subst () {
+	sed \
+		-e "s/@efi@/${EFI_ARCH}/g" \
+		-e "s/@arch@/${DEB_HOST_ARCH}/g" \
+		-e "s/@version_binary@/${version_binary}/g" \
+		-e "s/@version_mangled@/${version_mangled}/g" \
+		-e "s/@distribution@/${distribution}/g" \
+		-e "s/@urgency@/${urgency}/g" \
+		-e "s/@date@/${date}/g" \
+		"$@"
+}
+
+template='./debian/signing-template'
+pkg_name="shim-helpers-${DEB_HOST_ARCH}-signed-template"
+pkg_dir="debian/${pkg_name}/usr/share/code-signing/${pkg_name}"
+pkg_deb="${pkg_dir}/source-template/debian"
+
+install -o 0 -g 0 -m 0755 -d "${pkg_dir}"
+subst < ./debian/signing-template.json.in > "${pkg_dir}/files.json"
+
+find "${template}" -type f -printf '%P\n' |
+while read path
+do
+	src="${template}/${path}"
+	dst="${pkg_deb}/${path}"
+
+	install -o 0 -g 0 -m 0755 -d "${dst%/*}"
+	subst < "${src}" > "${dst%.in}"
+	chmod --reference="${src}" "${dst%.in}"
+done
+
+exit 0

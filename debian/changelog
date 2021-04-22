@@ -1,111 +1,219 @@
-shim (15+1552672080.a4a1fbe-0ubuntu2) focal; urgency=medium
+shim (15.4-2) unstable; urgency=medium
 
-  * d/patches/fix-path-checks.patch: Cherry-pick upstream fix for regression
-    in loading fwupd, or anything else specified as an argument (LP: #1864223)
+  * Add two further patches from upstream:
+    + fix import_one_mok_state() after split
+    + Don't call QueryVariableInfo() on EFI 1.10 machines (e.g. older
+      Intel Mac machines)
 
- -- Julian Andres Klode <juliank@ubuntu.com>  Fri, 20 Mar 2020 16:19:14 +0100
+ -- Steve McIntyre <93sam@debian.org>  Wed, 21 Apr 2021 00:23:02 +0100
 
-shim (15+1552672080.a4a1fbe-0ubuntu1) eoan; urgency=medium
+shim (15.4-1) unstable; urgency=medium
 
-  * New upstream snapshot 15+1552672080.a4a1fbe.
-  * debian/patches/VLogError-Avoid-NULL-pointer-dereferences-in-V-Sprin.patch,
-    debian/patches/fixup_git.patch: drop patches included in upstream.
-  * debian/patches/MokManager-avoid-unaligned.patch: Fix compilation with GCC9:
-    avoid -Werror=address-of-packed-member errors in MokManager.
-  * debian/patches/tpm-correctness-1.patch,
-    debian/patches/tpm-correctness-2.patch: fix issues in TPM calls to ensure
-    the measurements are consistent with what is entered in the TPM event log.
-  * debian/patches/tpm-correctness-3.patch: Don't log duplicate identical
-    TPM events.
-  * debian/patches/MokManager-hidpi-support.patch: Do a little bit more to
-    try to get a more usable screen resolution for MokManager when running on
-    HiDPI screens; by trying to detect such cases and switching to mode 0.
-  * debian/rules: update COMMIT_ID explicitly for this new snapshot.
+  * New upstream release fixing more bugs: SBAT and arm64 support
+  * Print sha256 checksums of the EFI binaries when the build is done
+  * Add two patches from upstream:
+    + fix i386 binary relocations
+    + allocate MOK config table as BootServicesData
 
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Fri, 11 Oct 2019 16:32:32 -0400
+ -- Steve McIntyre <93sam@debian.org>  Wed, 31 Mar 2021 18:25:00 +0100
 
-shim (15+1533136590.3beb971-0ubuntu2) eoan; urgency=medium
+shim (15.3-3) unstable; urgency=medium
 
-  * debian/copyright: Update upstream source location.
-  * d/p/VLogError-Avoid-NULL-pointer-dereferences-in-V-Sprin.patch: Fix
-    NULL pointer dereferences that lead to an exception error on arm64.
-    (LP: #1811722)
-  * d/p/Fix-OBJ_create-to-tolerate-a-NULL-sn-and-ln.patch: Fix NULL
-    pointer dereference when calling OBJ_create() that leads to an
-    exception error on arm64. (LP: #1811901)
-  * debian/rules: Fix syntax of else statement when setting EFI_ARCH.
+  * Update the timestamp for the 15.3-2 upload.
+  * Only include the upstream version in the Debian SBAT metadata, so
+    we don't break reproducibility on every minor packaging change.
 
- -- dann frazier <dannf@ubuntu.com>  Tue, 30 Apr 2019 12:45:02 -0600
+ -- Steve McIntyre <93sam@debian.org>  Wed, 24 Mar 2021 13:21:05 +0000
 
-shim (15+1533136590.3beb971-0ubuntu1) cosmic; urgency=medium
+shim (15.3-2) unstable; urgency=medium
 
-  [ Steve Langasek ]
-  * Fix Vcs link.
+  * Add missing build-dep on xxd for build-time unit tests
 
-  [ dann frazier ]
-  * Enable arm64 build.
+ -- Steve McIntyre <93sam@debian.org>  Wed, 24 Mar 2021 02:21:53 +0000
 
-  [ Mathieu Trudel-Lapierre ]
-  * New upstream snapshot.
-  * debian/patches/abort_abort_abort.patch: dropped patch, included upstream.
-  * debian/rules:
+shim (15.3-1) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * Switch to much-newer release with many fixes
+    + Particularly pulling in SBAT changes for better revocation support
+    + Remove all our old patches, no longer needed:
+      - avoid_null_vsprint.patch
+      - check_null_sn_ln.patch
+      - fixup_git.patch
+      - uname.patch
+      - use_compare_mem_gcc9.patch
+    + Now includes a vendor copy of gnu-efi with quite a few extra
+      fixes needed.
+    + Update copyright file to cover these changes
+  * Switch to using gcc-10 rather than gcc-9. Closes: #978521
+  * Add dbx entries for all our existing grub binaries
+    + They're insecure, let's break the chainloading hole.
+  * Add Debian SBAT data
+    + Add a Debian SBAT template, and rules to use it
+    + Adds a build-dep on dos2unix
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 23 Mar 2021 23:39:48 +0000
+
+shim (15+1533136590.3beb971-10) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Trim trailing whitespace.
+  * Use secure copyright file specification URI.
+  * debian/copyright: use spaces rather than tabs to start continuation
+    lines.
+  * Bump debhelper from old 11 to 12.
+  * Set debhelper-compat version in Build-Depends.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit.
+  * Update standards version to 4.4.1, no changes needed.
+
+  [ Steve McIntyre ]
+  * Trivial changes to generating the inbuilt dbx if we're using it.
+  * Upload to pick up rotated Debian signing keys
+
+ -- Steve McIntyre <93sam@debian.org>  Fri, 24 Jul 2020 01:22:46 +0100
+
+shim (15+1533136590.3beb971-9) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * In the -helpers-ARCH-signed packages, change the version
+    dependency on shim-unsigned to be >= and not =. This will allow
+    for installation to still work in the window while we wait for the
+    template package to do its second trip through the
+    archive. Closes: #955356
+
+ -- Steve McIntyre <93sam@debian.org>  Mon, 30 Mar 2020 15:19:08 +0100
+
+shim (15+1533136590.3beb971-8) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * Use --padding when calling pesign to generate hashes for the dbx
+    list, as recommended by Peter Jones. No actual changes needed in
+    our list of hashes at this point - they work out the same either
+    way.
+  * Switch to using gcc-9 for builds, tweaking a patch from upstream
+    to fix a FTBFS. Closes: #925816
+  * Update debhelper compat level to 11 for shim and the
+    signing-template
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 24 Mar 2020 16:51:10 +0000
+
+shim (15+1533136590.3beb971-7) unstable; urgency=medium
+
+  [ Ansgar Burchardt ]
+  * debian/control: Update Vcs-* fields
+
+  [ Steve McIntyre ]
+  * Backport needed crash fixes:
+    + VLogError(): Avoid NULL pointer dereferences in (V)Sprint calls
+    + Fix OBJ_create() to tolerate a NULL sn and ln
+  * Build using gcc-7 to get better control of reproducibility during the
+    lifetime of Buster.
+  * Build in a dbx list to blacklist binaries that we know to not be
+    secure. Build-depend on a new (bug-fixed) version of pesign to
+    generate that list at build time, using a list of known bad hashes.
+  * Initial list of known bad hashes is just my personal test binary.
+
+ -- Steve McIntyre <93sam@debian.org>  Wed, 08 May 2019 02:05:01 +0100
+
+shim (15+1533136590.3beb971-6) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * Add Provides: and Breaks: to shim-helpers-$arch-signed to fix
+    clashes with the old shim-signed package for fbx64.efi.signed and
+    mmx64.efi.signed. Closes: #924619
+
+  [ Helmut Grohne ]
+  * Fix FTCBFS: Set CROSS_COMPILE. (Closes: #922152)
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 23 Mar 2019 18:19:13 +0000
+
+shim (15+1533136590.3beb971-5) unstable; urgency=medium
+
+  [ Ansgar Burchardt ]
+  * Correct maintainer address in signing template
+
+  [ Steve McIntyre ]
+  * Remove Rules-Requires-Root in the signing template. We manually install
+    things owned by root. There might be better ways to do this, but this
+    will do for now.
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 12 Mar 2019 01:38:19 +0000
+
+shim (15+1533136590.3beb971-4) unstable; urgency=medium
+
+  [ Steve McIntyre ]
+  * No-change sourceful upload to get rebuilds (and hence build logs) from
+    the buildds. Hoping to get this version signed by Microsoft, so let's
+    make our setup as clean as possible.
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 09 Mar 2019 22:24:23 +0000
+
+shim (15+1533136590.3beb971-3) unstable; urgency=medium
+
+  [ Philipp Hahn ]
+  * debian/rules: fixing permissions no longer required
+  * debian/rules: Disable ephemeral key on Debian.
+  * Rename binary package to 'shim-unsigned'
+  * Add template for signing {mm,fb}$ARCH.efi. (Closes: #922228)
+
+  [ Luca Boccassi ]
+  * Override lintian error about template rules file.
+  * Include /usr/share/dpkg/architecture.mk instead of shelling out.
+  * Add uname.patch to avoid embedding the kernel architecture in the
+    binary and to use a fixed string instead.
+
+  [ Steve McIntyre ]
+  * Change maintenance address to be the EFI team
+  * Add me and vorlon to the Uploaders list
+  * Rename the helper binary packages to shim-helpers-$arch.
+  * Update the signing-template JSON metadata to match new practice:
+    + Move all the data under a new top-level "packages" key
+    + Add an empty "trusted_certs" key - the helper binaries do not do any
+      further verification with an embedded key.
+
+ -- Steve McIntyre <93sam@debian.org>  Fri, 08 Mar 2019 21:59:43 +0000
+
+shim (15+1533136590.3beb971-2) unstable; urgency=medium
+
+  * Update debian/watch.
+  * Update VCS to point to salsa.
+  * Fix debian/rules syntax for arm64 build.
+  * Enable build for i386.
+  * Ensure DEB_HOST_ARCH is set even if not present in the environment.
+  * Update Standards-Version.
+  * Update debian/copyright (drop reference to file no longer in source)
+
+ -- Steve Langasek <vorlon@debian.org>  Mon, 11 Feb 2019 05:18:18 +0000
+
+shim (15+1533136590.3beb971-1) unstable; urgency=medium
+
+  * New upstream release.
+    - debian/patches/second-stage-path: dropped; the default loader path now
+      includes an arch suffix.
+    - debian/patches/sbsigntool-no-pesign: dropped; no longer needed.
+  * Drop remaining patches that were not being applied.
+  * Sync packaging from Ubuntu:
+    - debian/copyright: Update upstream source location.
+    - debian/control: add a Build-Depends on libelf-dev.
+    - Enable arm64 build.
+    - debian/patches/fixup_git.patch: don't run git in clean; we're not
+      really in a git tree.
+    - debian/rules, debian/shim.install: use the upstream install target as
+      intended, and move files to the target directory using dh_install.
     - define RELEASE and COMMIT_ID for the snapshot.
     - Set ENABLE_HTTPBOOT to enable the HTTP Boot feature.
-  * debian/patches/fixup_git.patch: don't run git in clean; we're not really
-    in a git tree.
-
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Wed, 22 Aug 2018 10:52:10 -0400
-
-shim (13-0ubuntu2) bionic; urgency=medium
-
-  * debian/patches/abort_abort_abort.patch: signtool.exe isn't happy with some
-    of the structure of our binary, partly because abort() is thought to be an
-    external symbol, which causes some relocalisations to appear.
-
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Tue, 07 Nov 2017 10:19:04 -0500
-
-shim (13-0ubuntu1) artful; urgency=medium
-
-  * New upstream release: 13
-  * debian/control: add a Build-Depends on libelf-dev.
-  * debian/control: add Breaks: for the previous shim-signed builds given
-    that shim will now build and ship BOOT.CSV by itself.
-  * debian/rules:
     - Update dh_auto_build/dh_auto_clean/dh_auto_install for new upstream
       options: set MAKELEVEL.
     - Define an EFI_ARCH variable, and use that for paths to shim. This
       makes it possible to build a shim for other architectures than amd64.
-    - Set EFIDIR=ubuntu for dh_auto_install; that will let files be installed
+    - Set EFIDIR=$distro for dh_auto_install; that will let files be installed
       in the "right" final directories, and makes boot.csv for us.
     - Set ENABLE_SHIM_CERT, to keep using ephemeral self-signed certs built
       at compile-time for MokManager and fallback.
     - Set ENABLE_SBSIGN, to use sbsign instead of pesign for signing fallback
       and MokManager.
-  * debian/patches/second-stage-path: dropped; the default loader path now
-    includes an arch suffix.
-  * debian/patches/sbsigntool-no-pesign: dropped; no longer needed..
-  * debian/patches/0001-shim-fix-the-mirroring-MokSBState-fail.patch: dropped,
-    included upstream.
-  * debian/shim.install: update paths in light of using shim's upstream install
-    target.
-  * debian/rules, debian/shim.install: make sure the 'make install' step does
-    what it's meant to do by upstream: we can easily make use of the end result
-    to have the files we need.
 
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Fri, 29 Sep 2017 15:11:28 -0400
-
-shim (0.9+1474479173.6c180c6-1ubuntu1) zesty; urgency=medium
-
-  [ Steve Langasek ]
-  * Merge (not yet NEW cleared) changes from Debian branch.
-
-  [ Mathieu Trudel-Lapierre ]
-  * debian/patches/0001-shim-fix-the-mirroring-MokSBState-fail.patch: guard
-    against errors in mirroring MokSBState to MokSBStateRT. Thanks to Ivan Hu
-    for the patch. This will fix issues updating MokSBStateRT if the variable
-    already exists with different attributes. (LP: #1644806)
-
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Thu, 01 Dec 2016 16:55:50 -0500
+ -- Steve Langasek <vorlon@debian.org>  Sat, 09 Feb 2019 07:23:19 +0000
 
 shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
 
@@ -128,13 +236,13 @@ shim (0.9+1474479173.6c180c6-1) unstable; urgency=medium
 
  -- Julien Cristau <jcristau@debian.org>  Sat, 15 Oct 2016 15:17:34 +0200
 
-shim (0.9+1474479173.6c180c6-0ubuntu1) yakkety; urgency=medium
+shim (0.9+1474479173.6c180c6-0ubuntu1) UNRELEASED; urgency=medium
 
   [ Helen Koike ]
-  * debian/copyright: add OpenSSL license 
+  * debian/copyright: add OpenSSL license
 
   [ Mathieu Trudel-Lapierre ]
-  * New upstream release. (LP: #1624096)
+  * New upstream release.
   * debian/copyright: patches should be BSD, like the rest of the upstream
     code.
   * debian/patches/unused-variable: dropped; applied upstream.
@@ -143,7 +251,7 @@ shim (0.9+1474479173.6c180c6-0ubuntu1) yakkety; urgency=medium
     file to properly pick up shim (shim$arch), MokManager (mm$arch), and
     fallback (fb$arch).
 
- -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Thu, 22 Sep 2016 15:02:20 -0400
+ -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Wed, 21 Sep 2016 20:29:44 -0400
 
 shim (0.9+1465500757.14a5905-0ubuntu1) yakkety; urgency=medium
 
@@ -156,7 +264,7 @@ shim (0.9+1465500757.14a5905-0ubuntu1) yakkety; urgency=medium
   * Refreshed patches.
     - Remaining patches:
       + second-stage-path
-      + sbsigntool-not-pesign 
+      + sbsigntool-not-pesign
   * debian/patches/unused-variable: remove unused variable size.
   * debian/patches/binutils-version-matching: revert d9a4c912 to correctly
     match objcopy's version on Ubuntu.
