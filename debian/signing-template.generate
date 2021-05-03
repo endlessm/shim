@@ -6,6 +6,8 @@ urgency="$(dpkg-parsechangelog -S Urgency)"
 date="$(dpkg-parsechangelog -S Date)"
 version_binary="$(dpkg-parsechangelog -S Version)"
 version_mangled="$(dpkg-parsechangelog -S Version | tr '-' '+')"
+pkg_name="shim-helpers-${DEB_HOST_ARCH}-signed-template"
+final_pkg_name="${pkg_name%-template}"
 
 subst () {
 	sed \
@@ -16,11 +18,11 @@ subst () {
 		-e "s/@distribution@/${distribution}/g" \
 		-e "s/@urgency@/${urgency}/g" \
 		-e "s/@date@/${date}/g" \
+		-e "s/@final_pkg_name@/${final_pkg_name}/g" \
 		"$@"
 }
 
 template='./debian/signing-template'
-pkg_name="shim-helpers-${DEB_HOST_ARCH}-signed-template"
 pkg_dir="debian/${pkg_name}/usr/share/code-signing/${pkg_name}"
 pkg_deb="${pkg_dir}/source-template/debian"
 
@@ -31,7 +33,7 @@ find "${template}" -type f -printf '%P\n' |
 while read path
 do
 	src="${template}/${path}"
-	dst="${pkg_deb}/${path}"
+	dst=$(echo "${pkg_deb}/${path}" | subst)
 
 	install -o 0 -g 0 -m 0755 -d "${dst%/*}"
 	subst < "${src}" > "${dst%.in}"
