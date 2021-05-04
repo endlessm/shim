@@ -1,6 +1,11 @@
 #! /bin/sh
 set -e
 
+# If we're not on an EFI system, do nothing
+if [ ! -d /sys/firmware/efi ]; then
+    exit 0
+fi
+
 case @arch@ in
     i386)
 	SHIM_REMOVE="mmia32.efi fbia32.efi";;
@@ -39,8 +44,7 @@ case $1 in
 	# If we're being removed, remove the copies installed in the
 	# ESP. grub-install doesn't clean those up for us.
 	if [ "$bootloader_id" ] && \
-	   [ -d "/boot/efi/EFI/$bootloader_id" ] && \
-	   [ -d /sys/firmware/efi ]; then
+	   [ -d "/boot/efi/EFI/$bootloader_id" ]; then
 
 	    cd /boot/efi/EFI/$bootloader_id
 	    rm -f $SHIM_REMOVE

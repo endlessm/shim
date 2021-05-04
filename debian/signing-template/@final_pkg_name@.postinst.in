@@ -1,6 +1,11 @@
 #! /bin/sh
 set -e
 
+# If we're not on an EFI system, do nothing
+if [ ! -d /sys/firmware/efi ]; then
+    exit 0
+fi
+
 # Must load the confmodule for our template to be installed correctly.
 . /usr/share/debconf/confmodule
 
@@ -53,7 +58,6 @@ case $1 in
 	# needed
 	if [ "$bootloader_id" ] && \
 	   [ -d "/boot/efi/EFI/$bootloader_id" ] && \
-	   [ -d /sys/firmware/efi ] && \
 	   which grub-install >/dev/null 2>&1
 	then
 	    # Check for some of the options that matter, so we can

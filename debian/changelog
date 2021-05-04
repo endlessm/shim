@@ -1,3 +1,10 @@
+shim (15.4-4) unstable; urgency=medium
+
+  * Fix up those maintainer scripts - if we're not running on an EFI
+    system then exit cleanly.
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 04 May 2021 17:53:21 +0100
+
 shim (15.4-3) unstable; urgency=medium
 
   * Add maintainer scripts to the template packages to manage
