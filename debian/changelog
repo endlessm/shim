@@ -1,3 +1,10 @@
+shim (15.4-5) unstable; urgency=medium
+
+  * Add defensive code around calls to db_get. Don't fail if they
+    return errors.
+
+ -- Steve McIntyre <93sam@debian.org>  Thu, 06 May 2021 00:37:49 +0100
+
 shim (15.4-4) unstable; urgency=medium
 
   * Fix up those maintainer scripts - if we're not running on an EFI

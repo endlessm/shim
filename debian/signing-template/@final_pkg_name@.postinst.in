@@ -64,12 +64,12 @@ case $1 in
 	    # call grub-install safely without dropping them
 	    OPTIONS=""
 
-	    db_get grub2/force_efi_extra_removable
+	    db_get grub2/force_efi_extra_removable || RET=false
 	    if [ "$RET" = true ]; then
 		OPTIONS="$OPTIONS --force-extra-removable"
 	    fi
 
-	    db_get grub2/update_nvram
+	    db_get grub2/update_nvram || RET=true
 	    if [ "$RET" = false ]; then
 		OPTIONS="$OPTIONS --no-nvram"
 	    fi
