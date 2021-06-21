@@ -1,3 +1,10 @@
+shim (15.4-6) UNRELEASED; urgency=high
+
+  * Add arm64 patch to tweak section layout and stop crashing
+    problems. Upstream issue #371. Closes: #990082, #990190
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 22 Jun 2021 22:16:54 +0100
+
 shim (15.4-5) unstable; urgency=medium
 
   * Add defensive code around calls to db_get. Don't fail if they

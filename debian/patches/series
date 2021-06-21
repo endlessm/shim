@@ -2,3 +2,4 @@ fix-import_one_mok_state.patch
 fix-broken-ia32-reloc.patch
 MOK-BootServicesData.patch
 Don-t-call-QueryVariableInfo-on-EFI-1.10-machines.patch
+fix_arm64_rela_sections.patch
