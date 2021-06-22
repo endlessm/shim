@@ -2,6 +2,8 @@ shim (15.4-6) UNRELEASED; urgency=high
 
   * Add arm64 patch to tweak section layout and stop crashing
     problems. Upstream issue #371. Closes: #990082, #990190
+  * In insecure mode, don't abort if we can't create the MokListXRT
+    variable. Upstream issue #372. Closes: #989962, #990158
 
  -- Steve McIntyre <93sam@debian.org>  Tue, 22 Jun 2021 22:16:54 +0100
 
