@@ -46,6 +46,14 @@ config_item ()
     eval echo "\$$1"
 }
 
+run_grub_install()
+{
+    if ! grub-install $@ ; then
+        echo "Failed: grub-install $@" >&2
+        echo "WARNING: Bootloader is not properly installed, system may not be bootable" >&2
+    fi
+}
+
 case $1 in
     configure)
 	bootloader_id="$(config_item GRUB_DISTRIBUTOR | tr A-Z a-z | \
@@ -74,7 +82,7 @@ case $1 in
 		OPTIONS="$OPTIONS --no-nvram"
 	    fi
 
-	    grub-install --target=${GRUB_EFI_TARGET} $OPTIONS
+	    run_grub_install --target=${GRUB_EFI_TARGET} $OPTIONS
 	fi
 	;;
 esac

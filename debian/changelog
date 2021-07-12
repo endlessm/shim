@@ -1,3 +1,11 @@
+shim (15.4-7) unstable; urgency=high
+
+  * Tweak how we call grub-install; don't abort on error. Not ideal
+    behaviour either, but don't break upgrades. Copy the behaviour
+    from the grub packages here. Closes: #990966
+
+ -- Steve McIntyre <93sam@debian.org>  Mon, 12 Jul 2021 08:53:54 +0100
+
 shim (15.4-6) unstable; urgency=high
 
   * Add arm64 patch to tweak section layout and stop crashing
