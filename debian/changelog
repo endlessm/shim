@@ -9,6 +9,7 @@ shim (15.5-1) UNRELEASED; urgency=medium
       - fix_arm64_rela_sections.patch
       - relax_check_for_import_mok_state.patch
   * Tweak setup for dh_auto_test so the tests work
+  * Add new build-dep on libefivar-dev for tests
 
  -- Steve McIntyre <93sam@debian.org>  Wed, 27 Apr 2022 22:50:08 +0100
 
