@@ -1,5 +1,5 @@
 diff --git a/post-process-pe.c b/post-process-pe.c
-index 8414a5fa..7efba714 100644
+index 8414a5fa..e8c05486 100644
 --- a/post-process-pe.c
 +++ b/post-process-pe.c
 @@ -174,7 +174,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
@@ -11,15 +11,15 @@ index 8414a5fa..7efba714 100644
  
  	if (FileAlignment == 0)
  		FileAlignment = 0x200;
-@@ -189,7 +189,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
- 	      "Number of RVAs:%"PRIu64" EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES:%d\n",
+@@ -190,7 +190,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
  	      ctx->NumberOfRvaAndSizes, EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES);
  	if (EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES < ctx->NumberOfRvaAndSizes)
--		errx(1, "%s: invalid number of RVAs (%lu entries, max is %d)",
-+		errx(1, "%s: invalid number of RVAs (%llu entries, max is %d)",
- 		     file, ctx->NumberOfRvaAndSizes,
+ 		errx(1, "%s: invalid number of RVAs (%lu entries, max is %d)",
+-		     file, ctx->NumberOfRvaAndSizes,
++		     file, (unsigned long)ctx->NumberOfRvaAndSizes,
  		     EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES);
  
+ 	if (mul(sizeof(EFI_IMAGE_DATA_DIRECTORY),
 @@ -234,11 +234,11 @@ load_pe(const char *const file, void *const data, const size_t datasize,
  		        sizeof(EFI_IMAGE_DATA_DIRECTORY), &sz1))
  			debug(ERROR,
