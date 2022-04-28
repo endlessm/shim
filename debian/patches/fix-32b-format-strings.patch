@@ -1,3 +1,28 @@
+PR submitted at https://github.com/rhboot/shim/pull/464
+
+commit 88d5a4be2ccd2a75f96177682bc20d7dc4391291
+Author: Steve McIntyre <steve@einval.com>
+Date:   Thu Apr 28 11:37:12 2022 +0100
+
+    post-process-pe: Fix format string warnings on 32-bit platforms
+    
+    With -Werror these were causing build failures with stricter gcc:
+    
+    .../post-process-pe.c: In function 'load_pe':
+    .../post-process-pe.c:177:55: error: format '%ld' expects argument of type 'long int', but argument 4 has type 'size_t' {aka 'unsigned int'} [-Werror=format=]
+    .../post-process-pe.c:192:56: error: format '%lu' expects argument of type 'long unsigned int', but argument 4 has type 'UINT64' {aka 'long long unsigned int'} [-Werror=format=]
+    .../post-process-pe.c:236:31: error: format '%zu' expects argument of type 'size_t', but argument 2 has type 'UINT64' {aka 'long long unsigned int'} [-Werror=format=]
+    .../post-process-pe.c:39:32: note: in definition of macro 'debug'
+    .../post-process-pe.c:236:60: note: format string is defined here
+    .../post-process-pe.c:240:31: error: format '%zu' expects argument of type 'size_t', but argument 2 has type 'UINT64' {aka 'long long unsigned int'} [-Werror=format=]
+    .../post-process-pe.c:39:32: note: in definition of macro 'debug'
+    .../post-process-pe.c:240:60: note: format string is defined here
+    .../post-process-pe.c:274:30: error: format '%zu' expects argument of type 'size_t', but argument 2 has type 'UINTN' {aka 'long unsigned int'} [-Werror=format=]
+    .../post-process-pe.c:39:32: note: in definition of macro 'debug'
+    .../post-process-pe.c:274:34: note: format string is defined here
+    
+    Signed-off-by: Steve McIntyre <steve@einval.com>
+
 diff --git a/post-process-pe.c b/post-process-pe.c
 index 8414a5fa..e8c05486 100644
 --- a/post-process-pe.c
