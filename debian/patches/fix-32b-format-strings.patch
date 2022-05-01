@@ -1,6 +1,6 @@
 PR submitted at https://github.com/rhboot/shim/pull/464
 
-commit 88d5a4be2ccd2a75f96177682bc20d7dc4391291
+commit 475d5293608dd64955bc76dd6eb0f379b0c37b3e
 Author: Steve McIntyre <steve@einval.com>
 Date:   Thu Apr 28 11:37:12 2022 +0100
 
@@ -24,7 +24,7 @@ Date:   Thu Apr 28 11:37:12 2022 +0100
     Signed-off-by: Steve McIntyre <steve@einval.com>
 
 diff --git a/post-process-pe.c b/post-process-pe.c
-index 8414a5fa..e8c05486 100644
+index 44077bc5..daacf5ef 100644
 --- a/post-process-pe.c
 +++ b/post-process-pe.c
 @@ -174,7 +174,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
@@ -32,7 +32,7 @@ index 8414a5fa..e8c05486 100644
  
  	if (FileAlignment % 2 != 0)
 -		errx(1, "%s: Invalid file alignment %ld", file, FileAlignment);
-+		errx(1, "%s: Invalid file alignment %ld", file, (long)FileAlignment);
++		errx(1, "%s: Invalid file alignment %zu", file, FileAlignment);
  
  	if (FileAlignment == 0)
  		FileAlignment = 0x200;
@@ -45,17 +45,20 @@ index 8414a5fa..e8c05486 100644
  		     EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES);
  
  	if (mul(sizeof(EFI_IMAGE_DATA_DIRECTORY),
-@@ -234,11 +234,11 @@ load_pe(const char *const file, void *const data, const size_t datasize,
+@@ -233,12 +233,12 @@ load_pe(const char *const file, void *const data, const size_t datasize,
+ 		if (mul(ctx->NumberOfRvaAndSizes,
  		        sizeof(EFI_IMAGE_DATA_DIRECTORY), &sz1))
  			debug(ERROR,
- 			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) overflows\n",
+-			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) overflows\n",
 -			      ctx->NumberOfRvaAndSizes);
-+			      (size_t)ctx->NumberOfRvaAndSizes);
++			      "ctx->NumberOfRvaAndSizes (%ld) * sizeof(EFI_IMAGE_DATA_DIRECTORY) overflows\n",
++			      (unsigned long)ctx->NumberOfRvaAndSizes);
  		else
  			debug(ERROR,
- 			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) = %zu\n",
+-			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) = %zu\n",
 -			      ctx->NumberOfRvaAndSizes, sz1);
-+			      (size_t)ctx->NumberOfRvaAndSizes, sz1);
++			      "ctx->NumberOfRvaAndSizes (%ld) * sizeof(EFI_IMAGE_DATA_DIRECTORY) = %zu\n",
++			      (unsigned long)ctx->NumberOfRvaAndSizes, sz1);
  		debug(ERROR,
  		      "space after image header:%zu data directory size:%zu\n",
  		      sz0, sz1);
