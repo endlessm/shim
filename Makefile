@@ -1,7 +1,7 @@
 default : all
 
 NAME		= shim
-VERSION		= 15.5
+VERSION		= 15.6
 ifneq ($(origin RELEASE),undefined)
 DASHRELEASE	?= -$(RELEASE)
 else
@@ -40,7 +40,7 @@ TARGETS += $(MMNAME) $(FBNAME)
 endif
 OBJS	= shim.o globals.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o sbat.o sbat_data.o pe.o httpboot.o csv.o load-options.o
 KEYS	= shim_cert.h ocsp.* ca.* shim.crt shim.csr shim.p12 shim.pem shim.key shim.cer
-ORIG_SOURCES	= shim.c globals.c mok.c netboot.c replacements.c tpm.c errlog.c sbat.c pe.c httpboot.c shim.h version.h $(wildcard include/*.h)
+ORIG_SOURCES	= shim.c globals.c mok.c netboot.c replacements.c tpm.c errlog.c sbat.c pe.c httpboot.c shim.h version.h $(wildcard include/*.h) cert.S
 MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o globals.o
 ORIG_MOK_SOURCES = MokManager.c PasswordCrypt.c crypt_blowfish.c shim.h $(wildcard include/*.h)
 FALLBACK_OBJS = fallback.o tpm.o errlog.o sbat_data.o globals.o
@@ -108,9 +108,6 @@ shim.o: shim_cert.h
 endif
 shim.o: $(wildcard $(TOPDIR)/*.h)
 
-cert.o : $(TOPDIR)/cert.S
-	$(CC) $(CFLAGS) -c -o $@ $<
-
 sbat.%.csv : data/sbat.%.csv
 	$(DOS2UNIX) $(D2UFLAGS) $< $@
 	tail -c1 $@ | read -r _ || echo >> $@ # ensure a trailing newline
@@ -154,6 +151,7 @@ gnu-efi/$(ARCH_GNUEFI)/gnuefi/libgnuefi.a gnu-efi/$(ARCH_GNUEFI)/lib/libefi.a:
 	mkdir -p gnu-efi/lib gnu-efi/gnuefi
 	$(MAKE) -C gnu-efi \
 		COMPILER="$(COMPILER)" \
+		CCC_CC="$(COMPILER)" \
 		CC="$(CC)" \
 		ARCH=$(ARCH_GNUEFI) \
 		TOPDIR=$(TOPDIR)/gnu-efi \

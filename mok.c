@@ -84,6 +84,7 @@ categorize_deauthorized(struct mok_state_variable *v)
 #define MOK_MIRROR_DELETE_FIRST	0x02
 #define MOK_VARIABLE_MEASURE	0x04
 #define MOK_VARIABLE_LOG	0x08
+#define MOK_VARIABLE_INVERSE	0x10
 
 struct mok_state_variable mok_state_variable_data[] = {
 	{.name = L"MokList",
@@ -97,6 +98,8 @@ struct mok_state_variable mok_state_variable_data[] = {
 	 .categorize_addend = categorize_authorized,
 	 .addend = &vendor_authorized,
 	 .addend_size = &vendor_authorized_size,
+	 .user_cert = &user_cert,
+	 .user_cert_size = &user_cert_size,
 #if defined(ENABLE_SHIM_CERT)
 	 .build_cert = &build_cert,
 	 .build_cert_size = &build_cert_size,
@@ -176,9 +179,23 @@ struct mok_state_variable mok_state_variable_data[] = {
 	 .no_attr = EFI_VARIABLE_RUNTIME_ACCESS,
 	 .flags = MOK_MIRROR_DELETE_FIRST |
 		  MOK_VARIABLE_MEASURE |
+		  MOK_VARIABLE_INVERSE |
 		  MOK_VARIABLE_LOG,
 	 .pcr = 14,
 	 .state = &trust_mok_list,
+	},
+	{.name = L"MokPolicy",
+	 .name8 = "MokPolicy",
+	 .rtname = L"MokPolicyRT",
+	 .rtname8 = "MokPolicyRT",
+	 .guid = &SHIM_LOCK_GUID,
+	 .yes_attr = EFI_VARIABLE_BOOTSERVICE_ACCESS |
+		     EFI_VARIABLE_NON_VOLATILE,
+	 .no_attr = EFI_VARIABLE_RUNTIME_ACCESS,
+	 .flags = MOK_MIRROR_DELETE_FIRST |
+		  MOK_VARIABLE_LOG,
+	 .pcr = 14,
+	 .state = &mok_policy,
 	},
 	{ NULL, }
 };
@@ -586,7 +603,8 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 			dprint(L"FullDataSize:0x%lx FullData:0x%llx\n",
 			       FullDataSize, FullData);
 		}
-
+		if (v->user_cert_size)
+			FullDataSize += *v->user_cert_size;
 	}
 
 	/*
@@ -699,6 +717,10 @@ mirror_one_mok_variable(struct mok_state_variable *v,
 			p += build_cert_esl_sz;
 			dprint(L"FullDataSize:%lu FullData:0x%llx p:0x%llx pos:%lld\n",
 			       FullDataSize, FullData, p, p-(uintptr_t)FullData);
+		}
+		if (v->user_cert_size) {
+			CopyMem(p, *v->user_cert, *v->user_cert_size);
+			p += *v->user_cert_size;
 		}
 	}
 
@@ -846,7 +868,16 @@ EFI_STATUS import_one_mok_state(struct mok_state_variable *v,
 		efi_status = get_variable_attr(v->name,
 					       &v->data, &v->data_size,
 					       *v->guid, &attrs);
-		if (efi_status == EFI_NOT_FOUND) {
+		if (efi_status == EFI_NOT_FOUND &&
+		    v->flags & MOK_VARIABLE_INVERSE) {
+			v->data = AllocateZeroPool(4);
+			if (!v->data) {
+				perror(L"Out of memory\n");
+				return EFI_OUT_OF_RESOURCES;
+			}
+			v->data[0] = 0x01;
+			v->data_size = 1;
+		} else if (efi_status == EFI_NOT_FOUND) {
 			v->data = NULL;
 			v->data_size = 0;
 		} else if (EFI_ERROR(efi_status)) {
@@ -867,6 +898,11 @@ EFI_STATUS import_one_mok_state(struct mok_state_variable *v,
 				perror(L"  0x%08x should not have 0x%08x set.\n",
 				       attrs, v->no_attr);
 				delete = TRUE;
+			}
+			if (v->flags & MOK_VARIABLE_INVERSE) {
+				FreePool(v->data);
+				v->data = NULL;
+				v->data_size = 0;
 			}
 		}
 	}

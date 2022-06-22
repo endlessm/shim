@@ -11,6 +11,7 @@
 #include <getopt.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,8 @@ static int verbosity;
 		}                                                \
 		0;                                               \
 	})
+
+static bool set_nx_compat = false;
 
 typedef uint8_t UINT8;
 typedef uint16_t UINT16;
@@ -174,7 +177,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
 	}
 
 	if (FileAlignment % 2 != 0)
-		errx(1, "%s: Invalid file alignment %ld", file, FileAlignment);
+		errx(1, "%s: Invalid file alignment %zu", file, FileAlignment);
 
 	if (FileAlignment == 0)
 		FileAlignment = 0x200;
@@ -190,7 +193,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
 	      ctx->NumberOfRvaAndSizes, EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES);
 	if (EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES < ctx->NumberOfRvaAndSizes)
 		errx(1, "%s: invalid number of RVAs (%lu entries, max is %d)",
-		     file, ctx->NumberOfRvaAndSizes,
+		     file, (unsigned long)ctx->NumberOfRvaAndSizes,
 		     EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES);
 
 	if (mul(sizeof(EFI_IMAGE_DATA_DIRECTORY),
@@ -233,12 +236,12 @@ load_pe(const char *const file, void *const data, const size_t datasize,
 		if (mul(ctx->NumberOfRvaAndSizes,
 		        sizeof(EFI_IMAGE_DATA_DIRECTORY), &sz1))
 			debug(ERROR,
-			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) overflows\n",
-			      ctx->NumberOfRvaAndSizes);
+			      "ctx->NumberOfRvaAndSizes (%ld) * sizeof(EFI_IMAGE_DATA_DIRECTORY) overflows\n",
+			      (unsigned long)ctx->NumberOfRvaAndSizes);
 		else
 			debug(ERROR,
-			      "ctx->NumberOfRvaAndSizes (%zu) * sizeof(EFI_IMAGE_DATA_DIRECTORY) = %zu\n",
-			      ctx->NumberOfRvaAndSizes, sz1);
+			      "ctx->NumberOfRvaAndSizes (%ld) * sizeof(EFI_IMAGE_DATA_DIRECTORY) = %zu\n",
+			      (unsigned long)ctx->NumberOfRvaAndSizes, sz1);
 		debug(ERROR,
 		      "space after image header:%zu data directory size:%zu\n",
 		      sz0, sz1);
@@ -271,7 +274,7 @@ load_pe(const char *const file, void *const data, const size_t datasize,
 	if (sub(ctx->SizeOfHeaders, SectionHeaderOffset, &sz0) ||
 	    div(sz0, EFI_IMAGE_SIZEOF_SECTION_HEADER, &sz0) ||
 	    (sz0 < ctx->NumberOfSections)) {
-		debug(ERROR, "(%zu - %zu) / %d >= %d\n", ctx->SizeOfHeaders,
+		debug(ERROR, "(%zu - %zu) / %d >= %d\n", (size_t)ctx->SizeOfHeaders,
 		      SectionHeaderOffset, EFI_IMAGE_SIZEOF_SECTION_HEADER,
 		      ctx->NumberOfSections);
 		errx(1, "%s: image sections overflow section headers", file);
@@ -328,6 +331,33 @@ load_pe(const char *const file, void *const data, const size_t datasize,
 	    (ctx->SecDir->VirtualAddress == datasize &&
 	     ctx->SecDir->Size > 0))
 		errx(1, "%s: Security directory extends past end", file);
+}
+
+static void
+set_dll_characteristics(PE_COFF_LOADER_IMAGE_CONTEXT *ctx)
+{
+	uint16_t oldflags, newflags;
+
+	if (image_is_64_bit(ctx->PEHdr)) {
+		oldflags = ctx->PEHdr->Pe32Plus.OptionalHeader.DllCharacteristics;
+	} else {
+		oldflags = ctx->PEHdr->Pe32.OptionalHeader.DllCharacteristics;
+	}
+
+	if (set_nx_compat)
+		newflags = oldflags | EFI_IMAGE_DLLCHARACTERISTICS_NX_COMPAT;
+	else
+		newflags = oldflags & ~(uint16_t)EFI_IMAGE_DLLCHARACTERISTICS_NX_COMPAT;
+	if (oldflags == newflags)
+		return;
+
+	debug(INFO, "Updating DLL Characteristics from 0x%04hx to 0x%04hx\n",
+	      oldflags, newflags);
+	if (image_is_64_bit(ctx->PEHdr)) {
+		ctx->PEHdr->Pe32Plus.OptionalHeader.DllCharacteristics = newflags;
+	} else {
+		ctx->PEHdr->Pe32.OptionalHeader.DllCharacteristics = newflags;
+	}
 }
 
 static void
@@ -417,6 +447,8 @@ handle_one(char *f)
 
 	load_pe(f, map, sz, &ctx);
 
+	set_dll_characteristics(&ctx);
+
 	fix_timestamp(&ctx);
 
 	fix_checksum(&ctx, map, sz);
@@ -426,7 +458,7 @@ handle_one(char *f)
 		warn("msync(%p, %zu, MS_SYNC) failed", map, sz);
 		failed = 1;
 	}
-	munmap(map, sz);
+	rc = munmap(map, sz);
 	if (rc < 0) {
 		warn("munmap(%p, %zu) failed", map, sz);
 		failed = 1;
@@ -449,6 +481,8 @@ static void __attribute__((__noreturn__)) usage(int status)
 	fprintf(out, "Options:\n");
 	fprintf(out, "       -q    Be more quiet\n");
 	fprintf(out, "       -v    Be more verbose\n");
+	fprintf(out, "       -N    Disable the NX compatibility flag\n");
+	fprintf(out, "       -n    Enable the NX compatibility flag\n");
 	fprintf(out, "       -h    Print this help text and exit\n");
 
 	exit(status);
@@ -464,6 +498,12 @@ int main(int argc, char **argv)
 		{.name = "usage",
 		 .val = '?',
 		 },
+		{.name = "disable-nx-compat",
+		 .val = 'N',
+		},
+		{.name = "enable-nx-compat",
+		 .val = 'n',
+		},
 		{.name = "quiet",
 		 .val = 'q',
 		},
@@ -474,11 +514,17 @@ int main(int argc, char **argv)
 	};
 	int longindex = -1;
 
-	while ((i = getopt_long(argc, argv, "hqsv", options, &longindex)) != -1) {
+	while ((i = getopt_long(argc, argv, "hNnqv", options, &longindex)) != -1) {
 		switch (i) {
 		case 'h':
 		case '?':
 			usage(longindex == -1 ? 1 : 0);
+			break;
+		case 'N':
+			set_nx_compat = false;
+			break;
+		case 'n':
+			set_nx_compat = true;
 			break;
 		case 'q':
 			verbosity = MAX(verbosity - 1, MIN_VERBOSITY);
