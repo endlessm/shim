@@ -696,6 +696,7 @@ read_header(void *data, unsigned int datasize,
 	EFI_IMAGE_OPTIONAL_HEADER_UNION *PEHdr = data;
 	unsigned long HeaderWithoutDataDir, SectionHeaderOffset, OptHeaderSize;
 	unsigned long FileAlignment = 0;
+	UINT16 DllFlags;
 
 	if (datasize < sizeof (PEHdr->Pe32)) {
 		perror(L"Invalid image\n");
@@ -790,12 +791,20 @@ read_header(void *data, unsigned int datasize,
 		context->EntryPoint = PEHdr->Pe32Plus.OptionalHeader.AddressOfEntryPoint;
 		context->RelocDir = &PEHdr->Pe32Plus.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
 		context->SecDir = &PEHdr->Pe32Plus.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_SECURITY];
+		DllFlags = PEHdr->Pe32Plus.OptionalHeader.DllCharacteristics;
 	} else {
 		context->ImageAddress = PEHdr->Pe32.OptionalHeader.ImageBase;
 		context->EntryPoint = PEHdr->Pe32.OptionalHeader.AddressOfEntryPoint;
 		context->RelocDir = &PEHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
 		context->SecDir = &PEHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_SECURITY];
+		DllFlags = PEHdr->Pe32.OptionalHeader.DllCharacteristics;
 	}
+
+	if ((mok_policy & MOK_POLICY_REQUIRE_NX) &&
+	    !(DllFlags & EFI_IMAGE_DLLCHARACTERISTICS_NX_COMPAT)) {
+		perror(L"Policy requires NX, but image does not support NX\n");
+		return EFI_UNSUPPORTED;
+        }
 
 	context->FirstSection = (EFI_IMAGE_SECTION_HEADER *)((char *)PEHdr + PEHdr->Pe32.FileHeader.SizeOfOptionalHeader + sizeof(UINT32) + sizeof(EFI_IMAGE_FILE_HEADER));
 
@@ -820,7 +829,7 @@ read_header(void *data, unsigned int datasize,
 }
 
 EFI_STATUS
-handle_sbat(char *SBATBase, size_t SBATSize)
+verify_sbat_section(char *SBATBase, size_t SBATSize)
 {
 	unsigned int i;
 	EFI_STATUS efi_status;
@@ -834,7 +843,12 @@ handle_sbat(char *SBATBase, size_t SBATSize)
 
 	if (SBATBase == NULL || SBATSize == 0) {
 		dprint(L"No .sbat section data\n");
-		return EFI_SECURITY_VIOLATION;
+		/*
+		 * SBAT is mandatory for binaries loaded by shim, but optional
+		 * for binaries loaded outside of shim but verified via the
+		 * protocol.
+		 */
+		return in_protocol ? EFI_SUCCESS : EFI_SECURITY_VIOLATION;
 	}
 
 	sbat_size = SBATSize + 1;
@@ -873,6 +887,201 @@ err:
 	return efi_status;
 }
 
+static inline uint64_t
+shim_mem_attrs_to_uefi_mem_attrs (uint64_t attrs)
+{
+	uint64_t ret = EFI_MEMORY_RP |
+		       EFI_MEMORY_RO |
+		       EFI_MEMORY_XP;
+
+	if (attrs & MEM_ATTR_R)
+		ret &= ~EFI_MEMORY_RP;
+
+	if (attrs & MEM_ATTR_W)
+		ret &= ~EFI_MEMORY_RO;
+
+	if (attrs & MEM_ATTR_X)
+		ret &= ~EFI_MEMORY_XP;
+
+	return ret;
+}
+
+static inline uint64_t
+uefi_mem_attrs_to_shim_mem_attrs (uint64_t attrs)
+{
+	uint64_t ret = MEM_ATTR_R |
+		       MEM_ATTR_W |
+		       MEM_ATTR_X;
+
+	if (attrs & EFI_MEMORY_RP)
+		ret &= ~MEM_ATTR_R;
+
+	if (attrs & EFI_MEMORY_RO)
+		ret &= ~MEM_ATTR_W;
+
+	if (attrs & EFI_MEMORY_XP)
+		ret &= ~MEM_ATTR_X;
+
+	return ret;
+}
+
+static EFI_STATUS
+get_mem_attrs (uintptr_t addr, size_t size, uint64_t *attrs)
+{
+	EFI_MEMORY_ATTRIBUTE_PROTOCOL *proto = NULL;
+	EFI_PHYSICAL_ADDRESS physaddr = addr;
+	EFI_STATUS efi_status;
+
+	efi_status = LibLocateProtocol(&EFI_MEMORY_ATTRIBUTE_PROTOCOL_GUID,
+				       (VOID **)&proto);
+	if (EFI_ERROR(efi_status) || !proto)
+		return efi_status;
+
+	if (physaddr & 0xfff || size & 0xfff || size == 0 || attrs == NULL) {
+		dprint(L"%a called on 0x%llx-0x%llx and attrs 0x%llx\n",
+		       __func__, (unsigned long long)physaddr,
+		       (unsigned long long)(physaddr+size-1),
+		       attrs);
+		return EFI_SUCCESS;
+	}
+
+	efi_status = proto->GetMemoryAttributes(proto, physaddr, size, attrs);
+	*attrs = uefi_mem_attrs_to_shim_mem_attrs (*attrs);
+
+	return efi_status;
+}
+
+static EFI_STATUS
+update_mem_attrs(uintptr_t addr, uint64_t size,
+		 uint64_t set_attrs, uint64_t clear_attrs)
+{
+	EFI_MEMORY_ATTRIBUTE_PROTOCOL *proto = NULL;
+	EFI_PHYSICAL_ADDRESS physaddr = addr;
+	EFI_STATUS efi_status, ret;
+	uint64_t before = 0, after = 0, uefi_set_attrs, uefi_clear_attrs;
+
+	efi_status = LibLocateProtocol(&EFI_MEMORY_ATTRIBUTE_PROTOCOL_GUID,
+				       (VOID **)&proto);
+	if (EFI_ERROR(efi_status) || !proto)
+		return efi_status;
+
+	efi_status = get_mem_attrs (addr, size, &before);
+	if (EFI_ERROR(efi_status))
+		dprint(L"get_mem_attrs(0x%llx, 0x%llx, 0x%llx) -> 0x%lx\n",
+		       (unsigned long long)addr, (unsigned long long)size,
+		       &before, efi_status);
+
+	if (physaddr & 0xfff || size & 0xfff || size == 0) {
+		dprint(L"%a called on 0x%llx-0x%llx (size 0x%llx) +%a%a%a -%a%a%a\n",
+		       __func__, (unsigned long long)physaddr,
+		       (unsigned long long)(physaddr + size - 1),
+		       (unsigned long long)size,
+		       (set_attrs & MEM_ATTR_R) ? "r" : "",
+		       (set_attrs & MEM_ATTR_W) ? "w" : "",
+		       (set_attrs & MEM_ATTR_X) ? "x" : "",
+		       (clear_attrs & MEM_ATTR_R) ? "r" : "",
+		       (clear_attrs & MEM_ATTR_W) ? "w" : "",
+		       (clear_attrs & MEM_ATTR_X) ? "x" : "");
+		return 0;
+	}
+
+	uefi_set_attrs = shim_mem_attrs_to_uefi_mem_attrs (set_attrs);
+	dprint("translating set_attrs from 0x%lx to 0x%lx\n", set_attrs, uefi_set_attrs);
+	uefi_clear_attrs = shim_mem_attrs_to_uefi_mem_attrs (clear_attrs);
+	dprint("translating clear_attrs from 0x%lx to 0x%lx\n", clear_attrs, uefi_clear_attrs);
+	efi_status = EFI_SUCCESS;
+	if (uefi_set_attrs)
+		efi_status = proto->SetMemoryAttributes(proto, physaddr, size, uefi_set_attrs);
+	if (!EFI_ERROR(efi_status) && uefi_clear_attrs)
+		efi_status = proto->ClearMemoryAttributes(proto, physaddr, size, uefi_clear_attrs);
+	ret = efi_status;
+
+	efi_status = get_mem_attrs (addr, size, &after);
+	if (EFI_ERROR(efi_status))
+		dprint(L"get_mem_attrs(0x%llx, %llu, 0x%llx) -> 0x%lx\n",
+		       (unsigned long long)addr, (unsigned long long)size,
+		       &after, efi_status);
+
+	dprint(L"set +%a%a%a -%a%a%a on 0x%llx-0x%llx before:%c%c%c after:%c%c%c\n",
+	       (set_attrs & MEM_ATTR_R) ? "r" : "",
+	       (set_attrs & MEM_ATTR_W) ? "w" : "",
+	       (set_attrs & MEM_ATTR_X) ? "x" : "",
+	       (clear_attrs & MEM_ATTR_R) ? "r" : "",
+	       (clear_attrs & MEM_ATTR_W) ? "w" : "",
+	       (clear_attrs & MEM_ATTR_X) ? "x" : "",
+	       (unsigned long long)addr, (unsigned long long)(addr + size - 1),
+	       (before & MEM_ATTR_R) ? 'r' : '-',
+	       (before & MEM_ATTR_W) ? 'w' : '-',
+	       (before & MEM_ATTR_X) ? 'x' : '-',
+	       (after & MEM_ATTR_R) ? 'r' : '-',
+	       (after & MEM_ATTR_W) ? 'w' : '-',
+	       (after & MEM_ATTR_X) ? 'x' : '-');
+
+	return ret;
+}
+
+EFI_STATUS verify_image(void *data, unsigned int datasize,
+			EFI_LOADED_IMAGE *li,
+			PE_COFF_LOADER_IMAGE_CONTEXT *context)
+{
+	EFI_STATUS efi_status;
+	UINT8 sha1hash[SHA1_DIGEST_SIZE];
+	UINT8 sha256hash[SHA256_DIGEST_SIZE];
+
+	/*
+	 * The binary header contains relevant context and section pointers
+	 */
+	efi_status = read_header(data, datasize, context);
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Failed to read header: %r\n", efi_status);
+		return efi_status;
+	}
+
+	/*
+	 * Perform the image verification before we start copying data around
+	 * in order to load it.
+	 */
+	if (secure_mode()) {
+		efi_status = verify_buffer(data, datasize,
+					   context, sha256hash, sha1hash);
+		if (EFI_ERROR(efi_status)) {
+			if (verbose)
+				console_print(L"Verification failed: %r\n", efi_status);
+			else
+				console_error(L"Verification failed", efi_status);
+			return efi_status;
+		} else if (verbose)
+			console_print(L"Verification succeeded\n");
+	}
+
+	/*
+	 * Calculate the hash for the TPM measurement.
+	 * XXX: We're computing these twice in secure boot mode when the
+	 *  buffers already contain the previously computed hashes. Also,
+	 *  this is only useful for the TPM1.2 case. We should try to fix
+	 *  this in a follow-up.
+	 */
+	efi_status = generate_hash(data, datasize, context, sha256hash,
+				   sha1hash);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
+
+	/* Measure the binary into the TPM */
+#ifdef REQUIRE_TPM
+	efi_status =
+#endif
+	tpm_log_pe((EFI_PHYSICAL_ADDRESS)(UINTN)data, datasize,
+		   (EFI_PHYSICAL_ADDRESS)(UINTN)context->ImageAddress,
+		   li->FilePath, sha1hash, 4);
+#ifdef REQUIRE_TPM
+	if (efi_status != EFI_SUCCESS) {
+		return efi_status;
+	}
+#endif
+
+	return EFI_SUCCESS;
+}
+
 /*
  * Once the image has been loaded it needs to be validated and relocated
  */
@@ -888,6 +1097,7 @@ handle_image (void *data, unsigned int datasize,
 	int i;
 	EFI_IMAGE_SECTION_HEADER *Section;
 	char *base, *end;
+	UINT32 size;
 	PE_COFF_LOADER_IMAGE_CONTEXT context;
 	unsigned int alignment, alloc_size;
 	int found_entry_point = 0;
@@ -904,7 +1114,31 @@ handle_image (void *data, unsigned int datasize,
 	}
 
 	/*
-	 * We only need to verify the binary if we're in secure mode
+	 * Perform the image verification before we start copying data around
+	 * in order to load it.
+	 */
+	if (secure_mode ()) {
+		efi_status = verify_buffer(data, datasize, &context, sha256hash,
+					   sha1hash);
+
+		if (EFI_ERROR(efi_status)) {
+			if (verbose)
+				console_print(L"Verification failed: %r\n", efi_status);
+			else
+				console_error(L"Verification failed", efi_status);
+			return efi_status;
+		} else {
+			if (verbose)
+				console_print(L"Verification succeeded\n");
+		}
+	}
+
+	/*
+	 * Calculate the hash for the TPM measurement.
+	 * XXX: We're computing these twice in secure boot mode when the
+	 *  buffers already contain the previously computed hashes. Also,
+	 *  this is only useful for the TPM1.2 case. We should try to fix
+	 *  this in a follow-up.
 	 */
 	efi_status = generate_hash(data, datasize, &context, sha256hash,
 				   sha1hash);
@@ -954,6 +1188,11 @@ handle_image (void *data, unsigned int datasize,
 	}
 
 	buffer = (void *)ALIGN_VALUE((unsigned long)*alloc_address, alignment);
+	dprint(L"Loading 0x%llx bytes at 0x%llx\n",
+	       (unsigned long long)context.ImageSize,
+	       (unsigned long long)(uintptr_t)buffer);
+	update_mem_attrs((uintptr_t)buffer, alloc_size, MEM_ATTR_R|MEM_ATTR_W,
+			 MEM_ATTR_X);
 
 	CopyMem(buffer, data, context.SizeOfHeaders);
 
@@ -980,9 +1219,6 @@ handle_image (void *data, unsigned int datasize,
 
 	EFI_IMAGE_SECTION_HEADER *RelocSection = NULL;
 
-	char *SBATBase = NULL;
-	size_t SBATSize = 0;
-
 	/*
 	 * Copy the executable's sections to their desired offsets
 	 */
@@ -992,6 +1228,20 @@ handle_image (void *data, unsigned int datasize,
 		if ((Section->Characteristics & EFI_IMAGE_SCN_MEM_DISCARDABLE) &&
 		    !Section->Misc.VirtualSize)
 			continue;
+
+		/*
+		 * Skip sections that aren't marked readable.
+		 */
+		if (!(Section->Characteristics & EFI_IMAGE_SCN_MEM_READ))
+			continue;
+
+		if (!(Section->Characteristics & EFI_IMAGE_SCN_MEM_DISCARDABLE) &&
+		    (Section->Characteristics & EFI_IMAGE_SCN_MEM_WRITE) &&
+		    (Section->Characteristics & EFI_IMAGE_SCN_MEM_EXECUTE) &&
+		    (mok_policy & MOK_POLICY_REQUIRE_NX)) {
+			perror(L"Section %d is writable and executable\n", i);
+			return EFI_UNSUPPORTED;
+		}
 
 		base = ImageAddress (buffer, context.ImageSize,
 				     Section->VirtualAddress);
@@ -1027,33 +1277,6 @@ handle_image (void *data, unsigned int datasize,
 					RelocBaseEnd == end) {
 				RelocSection = Section;
 			}
-		} else if (CompareMem(Section->Name, ".sbat\0\0\0", 8) == 0) {
-			if (SBATBase || SBATSize) {
-				perror(L"Image has multiple SBAT sections\n");
-				return EFI_UNSUPPORTED;
-			}
-
-			if (Section->NumberOfRelocations != 0 ||
-			    Section->PointerToRelocations != 0) {
-				perror(L"SBAT section has relocations\n");
-				return EFI_UNSUPPORTED;
-			}
-
-			/* The virtual size corresponds to the size of the SBAT
-			 * metadata and isn't necessarily a multiple of the file
-			 * alignment. The on-disk size is a multiple of the file
-			 * alignment and is zero padded. Make sure that the
-			 * on-disk size is at least as large as virtual size,
-			 * and ignore the section if it isn't. */
-			if (Section->SizeOfRawData &&
-			    Section->SizeOfRawData >= Section->Misc.VirtualSize &&
-			    base && end) {
-				SBATBase = base;
-				/* +1 because of size vs last byte location */
-				SBATSize = end - base + 1;
-				dprint(L"sbat section base:0x%lx size:0x%lx\n",
-				       SBATBase, SBATSize);
-			}
 		}
 
 		if (Section->Characteristics & EFI_IMAGE_SCN_MEM_DISCARDABLE) {
@@ -1084,32 +1307,15 @@ handle_image (void *data, unsigned int datasize,
 				return EFI_UNSUPPORTED;
 			}
 
-			if (Section->SizeOfRawData > 0)
-				CopyMem(base, data + Section->PointerToRawData,
-					Section->SizeOfRawData);
+			size = Section->Misc.VirtualSize;
+			if (size > Section->SizeOfRawData)
+				size = Section->SizeOfRawData;
 
-			if (Section->SizeOfRawData < Section->Misc.VirtualSize)
-				ZeroMem(base + Section->SizeOfRawData,
-					Section->Misc.VirtualSize - Section->SizeOfRawData);
-		}
-	}
+			if (size > 0)
+				CopyMem(base, data + Section->PointerToRawData, size);
 
-	if (secure_mode ()) {
-		efi_status = handle_sbat(SBATBase, SBATSize);
-
-		if (!EFI_ERROR(efi_status))
-			efi_status = verify_buffer(data, datasize,
-						   &context, sha256hash, sha1hash);
-
-		if (EFI_ERROR(efi_status)) {
-			if (verbose)
-				console_print(L"Verification failed: %r\n", efi_status);
-			else
-				console_error(L"Verification failed", efi_status);
-			return efi_status;
-		} else {
-			if (verbose)
-				console_print(L"Verification succeeded\n");
+			if (size < Section->Misc.VirtualSize)
+				ZeroMem(base + size, Section->Misc.VirtualSize - size);
 		}
 	}
 
@@ -1132,6 +1338,50 @@ handle_image (void *data, unsigned int datasize,
 			return efi_status;
 		}
 	}
+
+	/*
+	 * Now set the page permissions appropriately.
+	 */
+	Section = context.FirstSection;
+	for (i = 0; i < context.NumberOfSections; i++, Section++) {
+		uint64_t set_attrs = MEM_ATTR_R;
+		uint64_t clear_attrs = MEM_ATTR_W|MEM_ATTR_X;
+		uintptr_t addr;
+		uint64_t length;
+
+		/*
+		 * Skip discardable sections with zero size
+		 */
+		if ((Section->Characteristics & EFI_IMAGE_SCN_MEM_DISCARDABLE) &&
+		    !Section->Misc.VirtualSize)
+			continue;
+
+		/*
+		 * Skip sections that aren't marked readable.
+		 */
+		if (!(Section->Characteristics & EFI_IMAGE_SCN_MEM_READ))
+			continue;
+
+		base = ImageAddress (buffer, context.ImageSize,
+				     Section->VirtualAddress);
+		end = ImageAddress (buffer, context.ImageSize,
+				    Section->VirtualAddress
+				     + Section->Misc.VirtualSize - 1);
+
+		addr = (uintptr_t)base;
+		length = (uintptr_t)end - (uintptr_t)base + 1;
+
+		if (Section->Characteristics & EFI_IMAGE_SCN_MEM_WRITE) {
+			set_attrs |= MEM_ATTR_W;
+			clear_attrs &= ~MEM_ATTR_W;
+		}
+		if (Section->Characteristics & EFI_IMAGE_SCN_MEM_EXECUTE) {
+			set_attrs |= MEM_ATTR_X;
+			clear_attrs &= ~MEM_ATTR_X;
+		}
+		update_mem_attrs(addr, length, set_attrs, clear_attrs);
+	}
+
 
 	/*
 	 * grub needs to know its location and size in memory, so fix up

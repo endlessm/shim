@@ -559,9 +559,9 @@ verify_one_signature(WIN_CERTIFICATE_EFI_PKCS *sig,
  * Check that the signature is valid and matches the binary
  */
 EFI_STATUS
-verify_buffer (char *data, int datasize,
-	       PE_COFF_LOADER_IMAGE_CONTEXT *context,
-	       UINT8 *sha256hash, UINT8 *sha1hash)
+verify_buffer_authenticode (char *data, int datasize,
+			    PE_COFF_LOADER_IMAGE_CONTEXT *context,
+			    UINT8 *sha256hash, UINT8 *sha1hash)
 {
 	EFI_STATUS ret_efi_status;
 	size_t size = datasize;
@@ -693,6 +693,71 @@ verify_buffer (char *data, int datasize,
 	}
 	drain_openssl_errors();
 	return ret_efi_status;
+}
+
+/*
+ * Check that the binary is permitted to load by SBAT.
+ */
+EFI_STATUS
+verify_buffer_sbat (char *data, int datasize,
+		    PE_COFF_LOADER_IMAGE_CONTEXT *context)
+{
+	int i;
+	EFI_IMAGE_SECTION_HEADER *Section;
+	char *SBATBase = NULL;
+	size_t SBATSize = 0;
+
+	Section = context->FirstSection;
+	for (i = 0; i < context->NumberOfSections; i++, Section++) {
+		if (CompareMem(Section->Name, ".sbat\0\0\0", 8) != 0)
+			continue;
+
+		if (SBATBase || SBATSize) {
+			perror(L"Image has multiple SBAT sections\n");
+			return EFI_UNSUPPORTED;
+		}
+
+		if (Section->NumberOfRelocations != 0 ||
+		    Section->PointerToRelocations != 0) {
+			perror(L"SBAT section has relocations\n");
+			return EFI_UNSUPPORTED;
+		}
+
+		/* The virtual size corresponds to the size of the SBAT
+		 * metadata and isn't necessarily a multiple of the file
+		 * alignment. The on-disk size is a multiple of the file
+		 * alignment and is zero padded. Make sure that the
+		 * on-disk size is at least as large as virtual size,
+		 * and ignore the section if it isn't. */
+		if (Section->SizeOfRawData &&
+		    Section->SizeOfRawData >= Section->Misc.VirtualSize) {
+			SBATBase = ImageAddress(data, datasize,
+						Section->PointerToRawData);
+			SBATSize = Section->SizeOfRawData;
+			dprint(L"sbat section base:0x%lx size:0x%lx\n",
+			       SBATBase, SBATSize);
+		}
+	}
+
+	return verify_sbat_section(SBATBase, SBATSize);
+}
+
+/*
+ * Check that the signature is valid and matches the binary and that
+ * the binary is permitted to load by SBAT.
+ */
+EFI_STATUS
+verify_buffer (char *data, int datasize,
+	       PE_COFF_LOADER_IMAGE_CONTEXT *context,
+	       UINT8 *sha256hash, UINT8 *sha1hash)
+{
+	EFI_STATUS efi_status;
+
+	efi_status = verify_buffer_sbat(data, datasize, context);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
+
+	return verify_buffer_authenticode(data, datasize, context, sha256hash, sha1hash);
 }
 
 static int
@@ -988,17 +1053,12 @@ restore_loaded_image(VOID)
 /*
  * Load and run an EFI executable
  */
-EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
+EFI_STATUS read_image(EFI_HANDLE image_handle, CHAR16 *ImagePath,
+		      CHAR16 **PathName, void **data, int *datasize)
 {
 	EFI_STATUS efi_status;
-	EFI_IMAGE_ENTRY_POINT entry_point;
-	EFI_PHYSICAL_ADDRESS alloc_address;
-	UINTN alloc_pages;
-	CHAR16 *PathName = NULL;
 	void *sourcebuffer = NULL;
 	UINT64 sourcesize = 0;
-	void *data = NULL;
-	int datasize = 0;
 
 	/*
 	 * We need to refer to the loaded image protocol on the running
@@ -1014,11 +1074,11 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 	/*
 	 * Build a new path from the existing one plus the executable name
 	 */
-	efi_status = generate_path_from_image_path(shim_li, ImagePath, &PathName);
+	efi_status = generate_path_from_image_path(shim_li, ImagePath, PathName);
 	if (EFI_ERROR(efi_status)) {
 		perror(L"Unable to generate path %s: %r\n", ImagePath,
 		       efi_status);
-		goto done;
+		return efi_status;
 	}
 
 	if (findNetboot(shim_li->DeviceHandle)) {
@@ -1034,8 +1094,8 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 			       efi_status);
 			return efi_status;
 		}
-		data = sourcebuffer;
-		datasize = sourcesize;
+		*data = sourcebuffer;
+		*datasize = sourcesize;
 	} else if (find_httpboot(shim_li->DeviceHandle)) {
 		efi_status = httpboot_fetch_buffer (image_handle,
 						    &sourcebuffer,
@@ -1045,26 +1105,45 @@ EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
 			       efi_status);
 			return efi_status;
 		}
-		data = sourcebuffer;
-		datasize = sourcesize;
+		*data = sourcebuffer;
+		*datasize = sourcesize;
 	} else {
 		/*
 		 * Read the new executable off disk
 		 */
-		efi_status = load_image(shim_li, &data, &datasize, PathName);
+		efi_status = load_image(shim_li, data, datasize, *PathName);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Failed to load image %s: %r\n",
 			       PathName, efi_status);
 			PrintErrors();
 			ClearErrors();
-			goto done;
+			return efi_status;
 		}
 	}
 
-	if (datasize < 0) {
+	if (*datasize < 0)
 		efi_status = EFI_INVALID_PARAMETER;
+
+	return efi_status;
+}
+
+/*
+ * Load and run an EFI executable
+ */
+EFI_STATUS start_image(EFI_HANDLE image_handle, CHAR16 *ImagePath)
+{
+	EFI_STATUS efi_status;
+	EFI_IMAGE_ENTRY_POINT entry_point;
+	EFI_PHYSICAL_ADDRESS alloc_address;
+	UINTN alloc_pages;
+	CHAR16 *PathName = NULL;
+	void *data = NULL;
+	int datasize = 0;
+
+	efi_status = read_image(image_handle, ImagePath, &PathName, &data,
+				&datasize);
+	if (EFI_ERROR(efi_status))
 		goto done;
-	}
 
 	/*
 	 * We need to modify the loaded image protocol entry before running
@@ -1313,6 +1392,127 @@ uninstall_shim_protocols(void)
 }
 
 EFI_STATUS
+load_cert_file(EFI_HANDLE image_handle, CHAR16 *filename, CHAR16 *PathName)
+{
+	EFI_STATUS efi_status;
+	EFI_LOADED_IMAGE li;
+	PE_COFF_LOADER_IMAGE_CONTEXT context;
+	EFI_IMAGE_SECTION_HEADER *Section;
+	EFI_SIGNATURE_LIST *certlist;
+	void *pointer;
+	UINT32 original;
+	int datasize = 0;
+	void *data = NULL;
+	int i;
+
+	efi_status = read_image(image_handle, filename, &PathName,
+				&data, &datasize);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
+
+	memset(&li, 0, sizeof(li));
+	memcpy(&li.FilePath[0], filename, MIN(StrSize(filename), sizeof(li.FilePath)));
+
+	efi_status = verify_image(data, datasize, &li, &context);
+	if (EFI_ERROR(efi_status))
+		return efi_status;
+
+	Section = context.FirstSection;
+	for (i = 0; i < context.NumberOfSections; i++, Section++) {
+		if (CompareMem(Section->Name, ".db\0\0\0\0\0", 8) == 0) {
+			original = user_cert_size;
+			if (Section->SizeOfRawData < sizeof(EFI_SIGNATURE_LIST)) {
+				continue;
+			}
+			pointer = ImageAddress(data, datasize,
+					       Section->PointerToRawData);
+			if (!pointer) {
+				continue;
+			}
+			certlist = pointer;
+			user_cert_size += certlist->SignatureListSize;;
+			user_cert = ReallocatePool(user_cert, original,
+						   user_cert_size);
+			memcpy(user_cert + original, pointer,
+			       certlist->SignatureListSize);
+		}
+	}
+	FreePool(data);
+	return EFI_SUCCESS;
+}
+
+/* Read additional certificates from files (after verifying signatures) */
+EFI_STATUS
+load_certs(EFI_HANDLE image_handle)
+{
+	EFI_STATUS efi_status;
+	EFI_LOADED_IMAGE *li = NULL;
+	CHAR16 *PathName = NULL;
+	EFI_FILE *root, *dir;
+	EFI_FILE_INFO *info;
+	EFI_HANDLE device;
+	EFI_FILE_IO_INTERFACE *drive;
+	UINTN buffersize = 0;
+	void *buffer = NULL;
+
+	efi_status = gBS->HandleProtocol(image_handle, &EFI_LOADED_IMAGE_GUID,
+					 (void **)&li);
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Unable to init protocol\n");
+		return efi_status;
+	}
+
+	efi_status = generate_path_from_image_path(li, L"", &PathName);
+	if (EFI_ERROR(efi_status))
+		goto done;
+
+	device = li->DeviceHandle;
+	efi_status = gBS->HandleProtocol(device, &EFI_SIMPLE_FILE_SYSTEM_GUID,
+					 (void **)&drive);
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Failed to find fs: %r\n", efi_status);
+		goto done;
+	}
+
+	efi_status = drive->OpenVolume(drive, &root);
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Failed to open fs: %r\n", efi_status);
+		goto done;
+	}
+
+	efi_status = root->Open(root, &dir, PathName, EFI_FILE_MODE_READ, 0);
+	if (EFI_ERROR(efi_status)) {
+		perror(L"Failed to open %s - %r\n", PathName, efi_status);
+		goto done;
+	}
+
+	while (1) {
+		int old = buffersize;
+		efi_status = dir->Read(dir, &buffersize, buffer);
+		if (efi_status == EFI_BUFFER_TOO_SMALL) {
+			buffer = ReallocatePool(buffer, old, buffersize);
+			continue;
+		} else if (EFI_ERROR(efi_status)) {
+			perror(L"Failed to read directory %s - %r\n", PathName,
+			       efi_status);
+			goto done;
+		}
+
+		info = (EFI_FILE_INFO *)buffer;
+		if (buffersize == 0 || !info)
+			goto done;
+
+		if (StrnCaseCmp(info->FileName, L"shim_certificate", 16) == 0) {
+			load_cert_file(image_handle, info->FileName, PathName);
+		}
+	}
+done:
+	FreePool(buffer);
+	FreePool(PathName);
+	return efi_status;
+}
+
+EFI_STATUS
 shim_init(void)
 {
 	EFI_STATUS efi_status;
@@ -1385,17 +1585,10 @@ debug_hook(void)
 	register volatile UINTN x = 0;
 	extern char _text, _data;
 
-	const CHAR16 * const debug_var_name =
-#ifdef ENABLE_SHIM_DEVEL
-		L"SHIM_DEVEL_DEBUG";
-#else
-		L"SHIM_DEBUG";
-#endif
-
 	if (x)
 		return;
 
-	efi_status = get_variable(debug_var_name, &data, &dataSize,
+	efi_status = get_variable(DEBUG_VAR_NAME, &data, &dataSize,
 				  SHIM_LOCK_GUID);
 	if (EFI_ERROR(efi_status)) {
 		return;
@@ -1409,7 +1602,7 @@ debug_hook(void)
 
 	console_print(L"Pausing for debugger attachment.\n");
 	console_print(L"To disable this, remove the EFI variable %s-%g .\n",
-		      debug_var_name, &SHIM_LOCK_GUID);
+		      DEBUG_VAR_NAME, &SHIM_LOCK_GUID);
 	x = 1;
 	while (x++) {
 		/* Make this so it can't /totally/ DoS us. */
@@ -1542,7 +1735,7 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 			goto die;
 		}
 
-		efi_status = handle_sbat(sbat_start, sbat_end - sbat_start - 1);
+		efi_status = verify_sbat_section(sbat_start, sbat_end - sbat_start - 1);
 		if (EFI_ERROR(efi_status)) {
 			perror(L"Verifiying shim SBAT data failed: %r\n",
 			       efi_status);
@@ -1553,6 +1746,13 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
 	}
 
 	init_openssl();
+
+	if (secure_mode()) {
+		efi_status = load_certs(global_image_handle);
+		if (EFI_ERROR(efi_status)) {
+			LogError(L"Failed to load addon certificates\n");
+		}
+	}
 
 	/*
 	 * Before we do anything else, validate our non-volatile,

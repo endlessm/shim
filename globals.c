@@ -12,6 +12,9 @@ UINT8 *vendor_authorized = NULL;
 UINT32 vendor_deauthorized_size = 0;
 UINT8 *vendor_deauthorized = NULL;
 
+UINT32 user_cert_size;
+UINT8 *user_cert;
+
 #if defined(ENABLE_SHIM_CERT)
 UINT32 build_cert_size;
 UINT8 *build_cert;
@@ -26,6 +29,7 @@ int loader_is_participating;
 UINT8 user_insecure_mode;
 UINT8 ignore_db;
 UINT8 trust_mok_list;
+UINT8 mok_policy = 0;
 
 UINT32 verbose = 0;
 
