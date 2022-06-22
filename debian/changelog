@@ -1,3 +1,12 @@
+shim (15.6-1) UNRELEASED; urgency=medium
+
+  * New upstream release fixing more bugs
+    + Remove all our old patches, all now upstream:
+      - fix-32b-format-strings.patch
+      - fix-test-includes.patch
+
+ -- Steve McIntyre <93sam@debian.org>  Thu, 23 Jun 2022 00:21:16 +0100
+
 shim (15.5-1) UNRELEASED; urgency=medium
 
   * New upstream release fixing more bugs
