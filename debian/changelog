@@ -1,3 +1,13 @@
+shim (15.6-1~deb11u1) UNRELEASED; urgency=medium
+
+  * New upstream release fixing more bugs
+    + Remove all our old patches, all now upstream:
+      - fix-32b-format-strings.patch
+      - fix-test-includes.patch
+  * Rebuild for bullseye
+
+ -- Steve McIntyre <93sam@debian.org>  Sat, 23 Jul 2022 11:14:52 +0200
+
 shim (15.4-7) unstable; urgency=high
 
   * Tweak how we call grub-install; don't abort on error. Not ideal
