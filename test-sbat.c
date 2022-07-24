@@ -14,6 +14,11 @@
 
 list_t sbat_var;
 
+BOOLEAN
+secure_mode() {
+	return 1;
+}
+
 #if 0
 /*
  * Mock test helpers
@@ -965,11 +970,96 @@ err:
 int
 test_preserve_sbat_uefi_variable_good(void)
 {
-	char sbat[] = "sbat,1,\ncomponent,2,\n";
+	char sbat[] =    "sbat,1,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,1,2021030218\ncomponent,2,\n";
 	size_t sbat_size = sizeof(sbat);
 	UINT32 attributes = SBAT_VAR_ATTRS;
 
-	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return 0;
+	else
+		return -1;
+}
+
+int
+test_preserve_sbat_uefi_variable_version_newer(void)
+{
+	char sbat[] =    "sbat,2,2022030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,1,2021030218\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return 0;
+	else
+		return -1;
+}
+
+int
+test_preserve_sbat_uefi_variable_version_newerlonger(void)
+{
+	char sbat[] =    "sbat,10,2022030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,2,2021030218\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return 0;
+	else
+		return -1;
+}
+
+int
+test_preserve_sbat_uefi_variable_version_older(void)
+{
+	char sbat[] =    "sbat,1,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,2,2022030218\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return -1;
+	else
+		return 0;
+}
+
+int
+test_preserve_sbat_uefi_variable_version_olderlonger(void)
+{
+	char sbat[] =    "sbat,2,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,10,2022030218\ncomponent,2,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return -1;
+	else
+		return 0;
+}
+
+
+int
+test_preserve_sbat_uefi_variable_newer(void)
+{
+	char sbat[] =    "sbat,1,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,1,2025030218\ncomponent,5,\ncomponent,3";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
+		return -1;
+	else
+		return 0;
+}
+int
+test_preserve_sbat_uefi_variable_older(void)
+{
+	char sbat[] =    "sbat,1,2025030218\ncomponent,2,\ncomponent,3";
+	char sbatvar[] = "sbat,1,2020030218\ncomponent,1,\n";
+	size_t sbat_size = sizeof(sbat);
+	UINT32 attributes = SBAT_VAR_ATTRS;
+
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
 		return 0;
 	else
 		return -1;
@@ -978,11 +1068,12 @@ test_preserve_sbat_uefi_variable_good(void)
 int
 test_preserve_sbat_uefi_variable_bad_sig(void)
 {
-	char sbat[] = "bad_sig,1,\ncomponent,2,\n";
+	char sbat[] = "bad_sig,1,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,1,2021030218\n";
 	size_t sbat_size = sizeof(sbat);
 	UINT32 attributes = SBAT_VAR_ATTRS;
 
-	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
 		return -1;
 	else
 		return 0;
@@ -991,11 +1082,12 @@ test_preserve_sbat_uefi_variable_bad_sig(void)
 int
 test_preserve_sbat_uefi_variable_bad_attr(void)
 {
-	char sbat[] = "sbat,1,\ncomponent,2,\n";
+	char sbat[] = "sbat,1,2021030218\ncomponent,2,\n";
+	char sbatvar[] = "sbat,1,2021030218\n";
 	size_t sbat_size = sizeof(sbat);
 	UINT32 attributes = 0;
 
-	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
 		return -1;
 	else
 		return 0;
@@ -1005,10 +1097,11 @@ int
 test_preserve_sbat_uefi_variable_bad_short(void)
 {
 	char sbat[] = "sba";
+	char sbatvar[] = "sbat,1,2021030218\n";
 	size_t sbat_size = sizeof(sbat);
 	UINT32 attributes = SBAT_VAR_ATTRS;
 
-	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes))
+	if (preserve_sbat_uefi_variable(sbat, sbat_size, attributes, sbatvar))
 		return -1;
 	else
 		return 0;
@@ -1052,9 +1145,15 @@ main(void)
 	test(test_parse_and_verify);
 
 	test(test_preserve_sbat_uefi_variable_good);
+	test(test_preserve_sbat_uefi_variable_newer);
+	test(test_preserve_sbat_uefi_variable_older);
 	test(test_preserve_sbat_uefi_variable_bad_sig);
 	test(test_preserve_sbat_uefi_variable_bad_attr);
 	test(test_preserve_sbat_uefi_variable_bad_short);
+	test(test_preserve_sbat_uefi_variable_version_newer);
+	test(test_preserve_sbat_uefi_variable_version_newerlonger);
+	test(test_preserve_sbat_uefi_variable_version_older);
+	test(test_preserve_sbat_uefi_variable_version_olderlonger);
 
 	return 0;
 }

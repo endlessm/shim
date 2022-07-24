@@ -124,10 +124,10 @@ ifeq ($(ARCH),x86_64)
                             || ( [ $(GCCVERSION) -eq "4" ]      \
                                  && [ $(GCCMINOR) -ge "7" ] ) ) \
                           && echo 1)
-  ifeq ($(GCCNEWENOUGH),1)
-    CPPFLAGS += -DGNU_EFI_USE_MS_ABI -DGNU_EFI_USE_EXTERNAL_STDARG -maccumulate-outgoing-args --std=c11
-  else ifeq ($(USING_CLANG),clang)
+  ifeq ($(USING_CLANG),clang)
     CPPFLAGS += -DGNU_EFI_USE_MS_ABI -DGNU_EFI_USE_EXTERNAL_STDARG --std=c11
+  else ifeq ($(GCCNEWENOUGH),1)
+    CPPFLAGS += -DGNU_EFI_USE_MS_ABI -DGNU_EFI_USE_EXTERNAL_STDARG -maccumulate-outgoing-args --std=c11
   endif
 
   CFLAGS += -mno-red-zone
@@ -153,11 +153,9 @@ endif
 # Set HAVE_EFI_OBJCOPY if objcopy understands --target efi-[app|bsdrv|rtdrv],
 # otherwise we need to compose the PE/COFF header using the assembler
 #
-ifneq ($(ARCH),aarch64)
 ifneq ($(ARCH),arm)
 ifneq ($(ARCH),mips64el)
 export HAVE_EFI_OBJCOPY=y
-endif
 endif
 endif
 
@@ -193,6 +191,7 @@ CFLAGS  += $(ARCH3264) $(OPTIMIZATIONS) \
            -fshort-wchar -fno-strict-aliasing \
 	   -ffreestanding -fno-stack-protector \
            -fno-stack-check -nostdinc \
+	   $(CFLAGS_LTO) $(CFLAGS_GCOV) \
 	   -isystem $(TOPDIR)/../include/system \
 	   -isystem $(shell $(CC) $(ARCH3264) -print-file-name=include) \
            $(if $(findstring gcc,$(CC)),-fno-merge-all-constants,)
