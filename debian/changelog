@@ -5,6 +5,8 @@ shim (15.6-1~deb11u1) UNRELEASED; urgency=medium
       - fix-32b-format-strings.patch
       - fix-test-includes.patch
   * Rebuild for bullseye
+    + Add new patches reverting arm64 build system changes so we can
+      build using older binutils.
 
  -- Steve McIntyre <93sam@debian.org>  Sat, 23 Jul 2022 11:14:52 +0200
 

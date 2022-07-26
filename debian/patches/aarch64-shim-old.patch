@@ -1,0 +1,190 @@
+shim 15.6 onwards needs newer binutils to build on aarch64. That works
+better, but we don't have that binutils update in older Debian
+releases. Undo the build changes here so that we can build for aarch64
+on older stable releases. We're not going to sign them, but we need
+the binaries for aarch64.
+
+diff --git a/Make.defaults b/Make.defaults
+index dfed9c4a..18677daa 100644
+--- a/Make.defaults
++++ b/Make.defaults
+@@ -84,7 +84,9 @@ ifeq ($(ARCH),aarch64)
+ 	ARCH_GNUEFI		?= aarch64
+ 	ARCH_SUFFIX		?= aa64
+ 	ARCH_SUFFIX_UPPER	?= AA64
+-	ARCH_LDFLAGS		?=
++	FORMAT			:= -O binary
++	SUBSYSTEM		:= 0xa
++	ARCH_LDFLAGS		+= --defsym=EFI_SUBSYSTEM=$(SUBSYSTEM)
+ 	ARCH_CFLAGS		?=
+ endif
+ ifeq ($(ARCH),arm)
+diff --git a/elf_aarch64_efi.lds b/elf_aarch64_efi.lds
+index 60c55ba5..42825fd9 100644
+--- a/elf_aarch64_efi.lds
++++ b/elf_aarch64_efi.lds
+@@ -3,94 +3,109 @@ OUTPUT_ARCH(aarch64)
+ ENTRY(_start)
+ SECTIONS
+ {
+-  . = 0;
+-  ImageBase = .;
+-  .hash : { *(.hash) }	/* this MUST come first! */
+-  . = ALIGN(4096);
+-  .eh_frame :
+-  {
+-    *(.eh_frame)
+-  }
+-  . = ALIGN(4096);
+-  .text :
+-  {
+-   _text = .;
+-   *(.text)
+-   *(.text.*)
+-   *(.gnu.linkonce.t.*)
+-   _etext = .;
+-  }
+-  . = ALIGN(4096);
+-  .reloc :
+-  {
+-   *(.reloc)
+-  }
+-  . = ALIGN(4096);
+-  .note.gnu.build-id : {
+-    *(.note.gnu.build-id)
+-  }
+-
+-  . = ALIGN(4096);
+-  .data.ident : {
+-    *(.data.ident)
++  .text 0x0 : {
++    _text = .;
++    *(.text.head)
++    *(.text)
++    *(.text.*)
++    *(.gnu.linkonce.t.*)
++    _evtext = .;
++    . = ALIGN(4096);
+   }
++  _etext = .;
++  _text_size = . - _text;
++  _text_vsize = _evtext - _text;
+ 
+   . = ALIGN(4096);
+   .data :
+   {
+    _data = .;
+-   *(.rodata*)
++   *(.sdata)
++   *(.data)
++   *(.data1)
++   *(.data.*)
+    *(.got.plt)
+    *(.got)
+-   *(.data*)
+-   *(.sdata)
++
++   *(.dynamic)
++
+    /* the EFI loader doesn't seem to like a .bss section, so we stick
+       it all into .data: */
++   . = ALIGN(16);
++   _bss = .;
+    *(.sbss)
+    *(.scommon)
+    *(.dynbss)
+    *(.bss)
+    *(COMMON)
+-   *(.rel.local)
++   _evdata = .;
++   . = ALIGN(4096);
++   _bss_end = .;
+   }
++  _edata = .;
++  _data_vsize = _evdata - _data;
++  _data_size = . - _data;
+ 
++  /*
++   * Note that _sbat must be the beginning of the data, and _esbat must be the
++   * end and must be before any section padding.  The sbat self-check uses
++   * _esbat to find the bounds of the data, and if the padding is included, the
++   * CSV parser (correctly) rejects the data as having NUL values in one of the
++   * required columns.
++   */
+   . = ALIGN(4096);
+-  .vendor_cert :
++  .sbat :
+   {
+-   *(.vendor_cert)
++    _sbat = .;
++    *(.sbat)
++    *(.sbat.*)
++    _esbat = .;
++    . = ALIGN(4096);
++    _epsbat = .;
+   }
++  _sbat_size = _epsbat - _sbat;
++  _sbat_vsize = _esbat - _sbat;
++
+   . = ALIGN(4096);
+-  .dynamic  : { *(.dynamic) }
++  .rodata :
++  {
++    _rodata = .;
++    *(.rodata*)
++    *(.srodata)
++    . = ALIGN(16);
++    *(.note.gnu.build-id)
++    . = ALIGN(4096);
++    *(.vendor_cert)
++    *(.data.ident)
++    . = ALIGN(4096);
++  }
+   . = ALIGN(4096);
+   .rela :
+   {
++    *(.rela.dyn)
++    *(.rela.plt)
++    *(.rela.got)
++    *(.rela.data)
+     *(.rela.data*)
+-    *(.rela.got*)
+-    *(.rela.stab*)
+   }
+-  _edata = .;
+-  _data_size = . - _data;
+   . = ALIGN(4096);
+-  .sbat :
++  .dyn :
+   {
+-    _sbat = .;
+-    *(.sbat)
+-    *(.sbat.*)
++    *(.dynsym)
++    *(.dynstr)
++    _evrodata = .;
++    . = ALIGN(4096);
+   }
+-  _esbat = .;
+-  _sbat_size = . - _sbat;
++  _erodata = .;
++  _rodata_size = . - _rodata;
++  _rodata_vsize = _evrodata - _rodata;
++  _alldata_size = . - _data;
+ 
+-  . = ALIGN(4096);
+-  .dynsym   : { *(.dynsym) }
+-  . = ALIGN(4096);
+-  .dynstr   : { *(.dynstr) }
+-  . = ALIGN(4096);
+-  .ignored.reloc :
++  /DISCARD/ :
+   {
+-    *(.rela.reloc)
++    *(.rel.reloc)
+     *(.eh_frame)
+     *(.note.GNU-stack)
+   }
+   .comment 0 : { *(.comment) }
+-  .note.gnu.build-id : { *(.note.gnu.build-id) }
+ }
