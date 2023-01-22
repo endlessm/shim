@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Debian EFI team <debian-efi@lists.debian.org>
 Uploaders: Steve Langasek <vorlon@debian.org>, Steve McIntyre <93sam@debian.org>
-Standards-Version: 4.4.1
+Standards-Version: 4.6.2
 Build-Depends: debhelper-compat (= 12),
 	       gnu-efi (>= 3.0u),
 	       sbsigntool,

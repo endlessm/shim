@@ -4,6 +4,7 @@ shim (15.7-1) UNRELEASED; urgency=medium
   * Add a further patch from upstream:
     + Make sbat_var.S parse right with buggy gcc/binutils
   * Switch to using gcc-12. Closes: #1022180
+  * Update to Standards-Version 4.6.2 (no changes needed)
 
  -- Steve McIntyre <93sam@debian.org>  Sun, 22 Jan 2023 13:12:14 +0000
 
