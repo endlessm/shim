@@ -1,15 +1,15 @@
 shim (15.7-1) UNRELEASED; urgency=medium
 
   * New upstream release fixing more bugs
-  * Add a further patch from upstream:
+  * Add further patches from upstream:
     + Make sbat_var.S parse right with buggy gcc/binutils
+    + Enable NX support at build time, as required by policy for signing
+      new shim binaries.
   * Switch to using gcc-12. Closes: #1022180
   * Update to Standards-Version 4.6.2 (no changes needed)
-  * Enable NX support at build time, as required by policy for signing
-    new shim binaries.
   * Block Debian grub binaries with sbat < 4 (see #1024617)
 
- -- Steve McIntyre <93sam@debian.org>  Sun, 29 Jan 2023 23:34:40 +0000
+ -- Steve McIntyre <93sam@debian.org>  Mon, 30 Jan 2023 18:11:23 +0000
 
 shim (15.6-1) unstable; urgency=medium
 
