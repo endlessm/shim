@@ -5,6 +5,7 @@ shim (15.7-1~deb11u1) UNRELEASED; urgency=medium
     + Make sbat_var.S parse right with buggy gcc/binutils
     + Enable NX support at build time, as required by policy for signing
       new shim binaries.
+  * Block Debian grub binaries with sbat < 4 (see #1024617)
   * Rebuild for bullseye
     + Add patches reverting arm64 build system changes so we can
       build using older binutils.
