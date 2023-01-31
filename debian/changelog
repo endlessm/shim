@@ -1,4 +1,4 @@
-shim (15.7-1) UNRELEASED; urgency=medium
+shim (15.7-1) unstable; urgency=medium
 
   * New upstream release fixing more bugs
   * Add further patches from upstream:
