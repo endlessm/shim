@@ -1,3 +1,12 @@
+shim (15.7-1~deb11u1) UNRELEASED; urgency=medium
+
+  * New upstream release fixing more bugs
+  * Rebuild for bullseye
+    + Add patches reverting arm64 build system changes so we can
+      build using older binutils.
+
+ -- Steve McIntyre <93sam@debian.org>  Tue, 31 Jan 2023 10:41:03 +0100
+
 shim (15.6-1~deb11u1) bullseye; urgency=medium
 
   * New upstream release fixing more bugs

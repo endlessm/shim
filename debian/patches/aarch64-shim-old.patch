@@ -20,10 +20,10 @@ index dfed9c4a..18677daa 100644
  endif
  ifeq ($(ARCH),arm)
 diff --git a/elf_aarch64_efi.lds b/elf_aarch64_efi.lds
-index 60c55ba5..42825fd9 100644
+index 0861f5e8..3837b98b 100644
 --- a/elf_aarch64_efi.lds
 +++ b/elf_aarch64_efi.lds
-@@ -3,94 +3,109 @@ OUTPUT_ARCH(aarch64)
+@@ -3,98 +3,110 @@ OUTPUT_ARCH(aarch64)
  ENTRY(_start)
  SECTIONS
  {
@@ -57,6 +57,10 @@ index 60c55ba5..42825fd9 100644
 -  . = ALIGN(4096);
 -  .data.ident : {
 -    *(.data.ident)
+-  }
+-  . = ALIGN(4096);
+-  .sbatlevel : {
+-    *(.sbatlevel)
 +  .text 0x0 : {
 +    _text = .;
 +    *(.text.head)
@@ -138,6 +142,7 @@ index 60c55ba5..42825fd9 100644
 +    . = ALIGN(4096);
 +    *(.vendor_cert)
 +    *(.data.ident)
++    *(.sbatlevel)
 +    . = ALIGN(4096);
 +  }
    . = ALIGN(4096);
