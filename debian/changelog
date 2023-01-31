@@ -1,6 +1,8 @@
 shim (15.7-1~deb11u1) UNRELEASED; urgency=medium
 
   * New upstream release fixing more bugs
+  * Add further patches from upstream:
+    + Make sbat_var.S parse right with buggy gcc/binutils
   * Rebuild for bullseye
     + Add patches reverting arm64 build system changes so we can
       build using older binutils.
