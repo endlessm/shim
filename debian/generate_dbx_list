@@ -17,11 +17,33 @@ IN=$2
 OUT=$3
 
 rm -f $OUT
-for HASH in $(grep -E "[[:xdigit:]]{32} $ARCH" < $IN | \
-		  awk '{print $1}' | sort | uniq); do
-    echo "  Adding $HASH to dbx list"
-    efisiglist -o $OUT -a -h $HASH
-done
+if [ -x /usr/bin/efisiglist ] ; then
+    # Older versions of the pesign package included the efisiglist
+    # utility. If we have that, use it.
+    for HASH in $(grep -E "[[:xdigit:]]{32} $ARCH" < $IN | \
+		      awk '{print $1}' | sort | uniq); do
+	echo "  Adding $HASH to dbx list"
+	efisiglist -o $OUT -a -h $HASH
+    done
+else
+    # It appears we don't have efisiglist, so use efisecdb
+    # instead. It's a little more awkward to drive.
+    UUID=$(uuidgen)
+    INTMP="" # First pass
+    for HASH in $(grep -E "[[:xdigit:]]{32} $ARCH" < $IN | \
+		      awk '{print $1}' | sort | uniq); do
+	echo "  Adding $HASH to dbx list"
+	efisecdb -g $UUID -a -t sha256 -h $HASH $INTMP -o $OUT
+
+	# Subsequent passes need to read the previous output as input
+	# each time, and won't overwrite the output.
+	mv -f $OUT $OUT.in
+	INTMP="-i $OUT.in"
+    done
+    if [ -f $OUT.in ]; then
+	mv -f $OUT.in $OUT
+    fi
+fi
 
 # If we have an empty hashes file, create an empty DBX file
 touch $OUT
