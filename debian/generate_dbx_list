@@ -16,6 +16,10 @@ ARCH=$1
 IN=$2
 OUT=$3
 
+# This needs to be fixed to make builds reproducible, of course. If
+# you're deriving from Debian, please generate your own.
+DEBIAN_UUID="fa31923d-6047-40bf-81d0-e63edefcf194"
+
 rm -f $OUT
 if [ -x /usr/bin/efisiglist ] ; then
     # Older versions of the pesign package included the efisiglist
@@ -28,12 +32,11 @@ if [ -x /usr/bin/efisiglist ] ; then
 else
     # It appears we don't have efisiglist, so use efisecdb
     # instead. It's a little more awkward to drive.
-    UUID=$(uuidgen)
     INTMP="" # First pass
     for HASH in $(grep -E "[[:xdigit:]]{32} $ARCH" < $IN | \
 		      awk '{print $1}' | sort | uniq); do
 	echo "  Adding $HASH to dbx list"
-	efisecdb -g $UUID -a -t sha256 -h $HASH $INTMP -o $OUT
+	efisecdb -g "$DEBIAN_UUID" -a -t sha256 -h $HASH $INTMP -o $OUT
 
 	# Subsequent passes need to read the previous output as input
 	# each time, and won't overwrite the output.

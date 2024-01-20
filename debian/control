@@ -13,7 +13,6 @@ Build-Depends: debhelper-compat (= 12),
 	       dos2unix,
 	       pesign (>= 0.112-5),
 	       efivar,
-	       uuid-runtime,
 	       xxd,
 	       libefivar-dev
 Vcs-Browser: https://salsa.debian.org/efi-team/shim
