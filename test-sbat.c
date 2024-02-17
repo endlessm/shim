@@ -5,6 +5,7 @@
 
 #ifndef SHIM_UNIT_TEST
 #define SHIM_UNIT_TEST
+#include "sbat_var_defs.h"
 #endif
 #include "shim.h"
 
@@ -196,6 +197,22 @@ free_mock_sbat_entries(list_t *entries)
  * parse_sbat_section() tests
  */
 int
+test_parse_sbat_tiny(void)
+{
+	char section_base[] = "\0a\00";
+	size_t section_size = 2;
+	struct sbat_section_entry **entries;
+	size_t n = 0;
+	EFI_STATUS status;
+
+	status = parse_sbat_section(section_base, section_size, &n, &entries);
+	assert_equal_return(status, EFI_SUCCESS, -1, "got %#hhx expected %#hhx\n");
+	assert_equal_return(n, 0, -1, "got %#hhx expected %#hhx\n");
+
+	return 0;
+}
+
+int
 test_parse_sbat_section_null_sbat_base(void)
 {
 	char *section_base = NULL;
@@ -362,7 +379,7 @@ test_parse_sbat_var_null_list(void)
 	EFI_STATUS status;
 
 	INIT_LIST_HEAD(&sbat_var);
-	status = parse_sbat_var(NULL);
+	status = parse_sbat_var(NULL, NULL);
 	cleanup_sbat_var(&sbat_var);
 	assert_equal_return(status, EFI_INVALID_PARAMETER, -1, "got %#hhx expected %#hhx\n");
 
@@ -1107,11 +1124,43 @@ test_preserve_sbat_uefi_variable_bad_short(void)
 		return 0;
 }
 
+static int
+test_sbat_var_asciz(void)
+{
+	EFI_STATUS status;
+	char buf[1024] = "";
+	UINT32 attrs = 0;
+	UINTN size = sizeof(buf);
+	char expected[] = SBAT_VAR_AUTOMATIC;
+
+	status = set_sbat_uefi_variable(SBAT_VAR_AUTOMATIC, SBAT_VAR_AUTOMATIC);
+	if (status != EFI_SUCCESS)
+		return -1;
+
+	status = RT->GetVariable(SBAT_VAR_NAME, &SHIM_LOCK_GUID, &attrs, &size, buf);
+	if (status != EFI_SUCCESS)
+		return -1;
+
+	/*
+	 * this should be enough to get past "sbat,", which handles the
+	 * first error.
+	 */
+	if (size < (strlen(SBAT_VAR_SIG) + 2) || size != strlen(expected))
+		return -1;
+
+	if (strncmp(expected, buf, size) != 0)
+		return -1;
+
+	return 0;
+}
+
 int
 main(void)
 {
 	int status = 0;
+
 	// parse_sbat section tests
+	test(test_parse_sbat_tiny);
 	test(test_parse_sbat_section_null_sbat_base);
 	test(test_parse_sbat_section_zero_sbat_size);
 	test(test_parse_sbat_section_null_entries);
@@ -1155,7 +1204,9 @@ main(void)
 	test(test_preserve_sbat_uefi_variable_version_older);
 	test(test_preserve_sbat_uefi_variable_version_olderlonger);
 
-	return 0;
+	test(test_sbat_var_asciz);
+
+	return status;
 }
 
 // vim:fenc=utf-8:tw=75:noet

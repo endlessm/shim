@@ -9,12 +9,15 @@
 	.type   sbat_var_payload_header, %object
 	.size   sbat_var_payload_header, .Lsbat_var_payload_header_end - sbat_var_payload_header
 sbat_var_payload_header:
-	.4byte  .Lsbat_var_previous - sbat_var_payload_header
+	.4byte  .Lsbat_var_automatic - sbat_var_payload_header
 	.4byte  .Lsbat_var_latest - sbat_var_payload_header
 .Lsbat_var_payload_header_end:
 	.balign	1, 0
-.Lsbat_var_previous:
-	.asciz SBAT_VAR_PREVIOUS
+.Lsbat_var_automatic:
+	.ascii SBAT_VAR_AUTOMATIC
+	.byte	0
 	.balign	1, 0
 .Lsbat_var_latest:
-	.asciz SBAT_VAR_LATEST
+	.ascii SBAT_VAR_LATEST
+	.byte 0
+	.section .note.GNU-stack,"a"

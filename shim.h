@@ -180,6 +180,7 @@
 #include "include/replacements.h"
 #include "include/sbat.h"
 #include "include/sbat_var_defs.h"
+#include "include/ssp.h"
 #if defined(OVERRIDE_SECURITY_POLICY)
 #include "include/security_policy.h"
 #endif
@@ -281,18 +282,32 @@ verify_buffer (char *data, int datasize,
 #ifndef SHIM_UNIT_TEST
 #define perror_(file, line, func, fmt, ...) ({					\
 		UINTN __perror_ret = 0;						\
+		_Static_assert((fmt) != NULL,					\
+			       "format specifier cannot be NULL");		\
 		if (!in_protocol)						\
 			__perror_ret = console_print((fmt), ##__VA_ARGS__);	\
 		LogError_(file, line, func, fmt, ##__VA_ARGS__);		\
 		__perror_ret;							\
 	})
-#define perror(fmt, ...) \
-	perror_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
-#define LogError(fmt, ...) \
-	LogError_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__)
+#define perror(fmt, ...) ({							\
+		_Static_assert((fmt) != NULL,					\
+			       "format specifier cannot be NULL");		\
+		perror_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__);	\
+	})
+#define LogError(fmt, ...) ({							\
+		_Static_assert((fmt) != NULL,					\
+			       "format specifier cannot be NULL");		\
+		LogError_(__FILE__, __LINE__ - 1, __func__, fmt, ##__VA_ARGS__);\
+	})
 #else
-#define perror(fmt, ...)
-#define LogError(fmt, ...)
+#define perror(fmt, ...) ({							\
+		_Static_assert((fmt) != NULL,					\
+			       "format specifier cannot be NULL");		\
+	})
+#define LogError(fmt, ...) ({							\
+		_Static_assert((fmt) != NULL,					\
+			       "format specifier cannot be NULL");		\
+	})
 #endif
 
 #ifdef ENABLE_SHIM_DEVEL
@@ -304,6 +319,8 @@ verify_buffer (char *data, int datasize,
 #define VERBOSE_VAR_NAME L"SHIM_VERBOSE"
 #define DEBUG_VAR_NAME L"SHIM_DEBUG"
 #endif
+
+#define SHIM_RETAIN_PROTOCOL_VAR_NAME L"ShimRetainProtocol"
 
 char *translate_slashes(char *out, const char *str);
 
