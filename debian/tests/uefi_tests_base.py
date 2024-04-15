@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import lsb_release
 import os
 import shutil
 import stat
@@ -169,7 +168,8 @@ class UEFIVirtualMachine(UEFITestsBase):
         self.autopkgtest_dir = tempfile.TemporaryDirectory()
         os.makedirs(os.path.join(self.autopkgtest_dir.name, 'img'))
         self.arch = arch
-        self.release = lsb_release.get_os_release()['CODENAME']
+        release = subprocess.run(['lsb_release','-c','-s'], capture_output=True, check=True)
+        self.release = release.stdout
         self.path = tempfile.mkstemp(dir=self.autopkgtest_dir.name)[1]
         if not base:
             subprocess.run(['wget',
