@@ -30,16 +30,16 @@ class SanityTests(UEFITestsBase):
 
     def testArchitectureSuffixes(self):
         """Ensure sanity of our concept of architecture suffixes for UEFI"""
-    
+
         machine = subprocess.check_output(['uname', '-m']).rstrip().decode('utf-8')
         if machine == 'x86_64':
-            self.assertEquals('x64', self.arch_suffix)    
-            self.assertEquals('x86_64-efi', self.grub_arch)    
-            self.assertEquals('qemu-system-x86_64', self.qemu_arch)
+            self.assertEqual('x64', self.arch_suffix)
+            self.assertEqual('x86_64-efi', self.grub_arch)
+            self.assertEqual('qemu-system-x86_64', self.qemu_arch)
         elif machine == 'aarch64':
-            self.assertEquals('aa64', self.arch_suffix)    
-            self.assertEquals('arm64-efi', self.grub_arch)    
-            self.assertEquals('qemu-system-aarch64', self.qemu_arch)
+            self.assertEqual('aa64', self.arch_suffix)
+            self.assertEqual('arm64-efi', self.grub_arch)
+            self.assertEqual('qemu-system-aarch64', self.qemu_arch)
 
     def testQemuAvailable(self):
         """Ensure QEMU is available for this architecture"""
