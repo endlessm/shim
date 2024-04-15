@@ -4,6 +4,8 @@ Depends: @,
   qemu-system-x86 [amd64],
   lsb-release,
   python3,
+  wget,
+  openssl,
 Restrictions: allow-stderr, needs-root, isolation-machine
 Features: test-name=sanity
 
@@ -12,8 +14,12 @@ Depends: @,
   sbsigntool,
   grub-efi-arm64-signed [arm64],
   grub-efi-amd64-signed [amd64],
+  shim-signed [amd64],
+  shim-signed [arm64],
   lsb-release,
   python3,
+  wget,
+  openssl,
 Restrictions: allow-stderr, needs-root, isolation-machine
 Features: test-name=signatures
 
@@ -31,5 +37,9 @@ Depends: @,
   grub-efi-amd64-signed [amd64],
   lsb-release,
   python3,
+  wget,
+  openssl,
+  ca-certificates,
+  distro-info,
 Restrictions: allow-stderr, needs-root, isolation-machine
 Features: test-name=boot-test

@@ -19,6 +19,7 @@
 import os
 import shutil
 import stat
+import math
 import subprocess
 import tempfile
 from time import sleep
@@ -68,8 +69,8 @@ class UEFITestsBase(unittest.TestCase):
         klass.uefi_boot_dir = os.path.join(klass.uefi_base_dir, 'BOOT')
         klass.uefi_install_dir = os.path.join(klass.uefi_base_dir, 'debian')
 
-        # CAs for signature validation
-        klass.canonical_ca = os.path.join('/usr/share/grub', 'canonical-uefi-ca.crt')
+        # CAs for signature validation (not yet)
+        # klass.ca = os.path.join('/usr/share/grub', 'debian-uefi-ca.crt')
 
         # Shim paths
         klass.shim_pkg_dir = os.path.join('/', 'usr', 'lib', 'shim')
@@ -85,8 +86,8 @@ class UEFITestsBase(unittest.TestCase):
 
         # OMVF paths
         if klass.arch_machine == 'x86_64':
-            klass.uefi_code_path = '/usr/share/OVMF/OVMF_CODE.ms.fd'
-            klass.uefi_vars_path = '/usr/share/OVMF/OVMF_VARS.ms.fd'
+            klass.uefi_code_path = '/usr/share/OVMF/OVMF_CODE_4M.ms.fd'
+            klass.uefi_vars_path = '/usr/share/OVMF/OVMF_VARS_4M.ms.fd'
         elif klass.arch_machine == 'aarch64':
             klass.uefi_code_path = '/usr/share/AAVMF/AAVMF_CODE.fd'
             klass.uefi_vars_path = '/usr/share/AAVMF/AAVMF_VARS.fd'
@@ -169,13 +170,24 @@ class UEFIVirtualMachine(UEFITestsBase):
         os.makedirs(os.path.join(self.autopkgtest_dir.name, 'img'))
         self.arch = arch
         release = subprocess.run(['lsb_release','-c','-s'], capture_output=True, check=True)
-        self.release = release.stdout
+        self.release = release.stdout.strip().decode('utf-8')
+        release_number = subprocess.run(['lsb_release','-r','-s'], capture_output=True, check=True).stdout.strip().decode('utf-8')
+        self.release_number = None
+        try:
+           self.release_number = int(math.floor(float(release_number)))
+        except:
+           if(self.release == 'sid'):
+               self.release_number = 'sid'
+           else:
+               alias = subprocess.run(['distro-info','--alias', self.release], capture_output=True, check=True).stdout.strip().decode('utf-8')
+               number_distro = subprocess.run(['distro-info','-r', '--%s' % (alias)], capture_output=True, check=True).stdout.strip().decode('utf-8')
+               self.release_number = int(math.floor(float(number_distro)))
         self.path = tempfile.mkstemp(dir=self.autopkgtest_dir.name)[1]
         if not base:
             subprocess.run(['wget',
-                            'http://cloud.debian.org/%s/lastest/debian-%s-genericcloud-%s.img'
-                            % (self.release, self.release, self.arch),
-                            '-O', '%s/base.img' % self.autopkgtest_dir.name])
+                            'https://cloud.debian.org/images/cloud/%s/daily/latest/debian-%s-genericcloud-%s-daily.qcow2'
+                            % (self.release, self.release_number, self.arch),
+                            '-O', '%s/base.img' % self.autopkgtest_dir.name], check = True)
         else:
             self.arch = base.arch
             shutil.copy(base.path, os.path.join(self.autopkgtest_dir.name, 'base.img'))
@@ -222,13 +234,13 @@ class UEFIVirtualMachine(UEFITestsBase):
     def run(self):
         self.prepare()
         # start qemu-system-$arch, output log to serial and capture to variable
-        subprocess.run([self.qemu_arch, '-m', '2048', '-nographic',
+        subprocess.run([self.qemu_arch, '-m', '1024', '-nographic',
                         '-serial', 'mon:stdio',
                         '-drive', 'file=%s,if=pflash,format=raw,unit=0,readonly=on' % self.uefi_code_path,
                         '-drive', 'file=%s.VARS.fd,if=pflash,format=raw,unit=1' % self.path,
-                        '-drive', 'file=%s,if=none,id=harddrive0' % self.path,
+                        '-drive', 'file=%s,if=none,id=harddrive0,format=qcow2' % self.path,
                         '-device', 'virtio-blk-pci,drive=harddrive0,bootindex=0',
-                        '-drive', 'file=%s/cloud-init.seed,if=virtio,readonly' % self.autopkgtest_dir.name])
+                        '-drive', 'file=%s/cloud-init.seed,if=virtio,readonly=on' % self.autopkgtest_dir.name])
 
     def ready(self):
         """Returns true if the VM is booted and ready at userland"""
