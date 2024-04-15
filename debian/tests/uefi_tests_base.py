@@ -67,7 +67,7 @@ class UEFITestsBase(unittest.TestCase):
         # Base paths for the ESP.
         klass.uefi_base_dir = os.path.join('/', 'boot', 'efi', 'EFI')
         klass.uefi_boot_dir = os.path.join(klass.uefi_base_dir, 'BOOT')
-        klass.uefi_install_dir = os.path.join(klass.uefi_base_dir, 'ubuntu')
+        klass.uefi_install_dir = os.path.join(klass.uefi_base_dir, 'debian')
 
         # CAs for signature validation
         klass.canonical_ca = os.path.join('/usr/share/grub', 'canonical-uefi-ca.crt')
@@ -151,7 +151,7 @@ DEFAULT_METADATA = 'instance-id: nocloud\nlocal-hostname: autopkgtest\n'
 
 DEFAULT_USERDATA = """#cloud-config
 locale: en_US.UTF-8
-password: ubuntu
+password: debian
 chpasswd: { expire: False }
 ssh_pwauth: True
 manage_etc_hosts: True
@@ -173,7 +173,7 @@ class UEFIVirtualMachine(UEFITestsBase):
         self.path = tempfile.mkstemp(dir=self.autopkgtest_dir.name)[1]
         if not base:
             subprocess.run(['wget',
-                            'http://cloud-images.ubuntu.com/%s/current/%s-server-cloudimg-%s.img'
+                            'http://cloud.debian.org/%s/lastest/debian-%s-genericcloud-%s.img'
                             % (self.release, self.release, self.arch),
                             '-O', '%s/base.img' % self.autopkgtest_dir.name])
         else:

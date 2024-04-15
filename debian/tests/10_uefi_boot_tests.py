@@ -42,7 +42,7 @@ class UEFIBootTests(UEFITestsBase):
     def testNewShim(self):
         """Validate that a new SHIM binary on the image will boot"""
         new_shim = UEFIVirtualMachine(self.base_image)
-        new_shim.update(src='/usr/lib/shim/shimx64.efi.signed', dst='/boot/efi/EFI/ubuntu/shimx64.efi')
+        new_shim.update(src='/usr/lib/shim/shimx64.efi.signed', dst='/boot/efi/EFI/debian/shimx64.efi')
         new_shim.update(src='/usr/lib/shim/shimx64.efi.signed', dst='/boot/efi/EFI/BOOT/BOOTX64.efi')
         new_shim.run()
         self.assertBoots(new_shim)
