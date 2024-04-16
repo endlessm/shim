@@ -88,9 +88,11 @@ class UEFITestsBase(unittest.TestCase):
         if klass.arch_machine == 'x86_64':
             klass.uefi_code_path = '/usr/share/OVMF/OVMF_CODE_4M.ms.fd'
             klass.uefi_vars_path = '/usr/share/OVMF/OVMF_VARS_4M.ms.fd'
+            klass.uefi_qemu_extra = [ '-machine', 'q35,smm=on' ]
         elif klass.arch_machine == 'aarch64':
             klass.uefi_code_path = '/usr/share/AAVMF/AAVMF_CODE.fd'
             klass.uefi_vars_path = '/usr/share/AAVMF/AAVMF_VARS.fd'
+            klass.uefi_qemu_extra = []
 
         subprocess.run(['modprobe', 'nbd'])
 
@@ -157,6 +159,7 @@ ssh_pwauth: True
 manage_etc_hosts: True
 runcmd:
  - (while [ ! -e /var/lib/cloud/instance/boot-finished ]; do sleep 1; done;
+    touch /TESTOK;
     shutdown -P now) &
 """
 
@@ -211,10 +214,12 @@ class UEFIVirtualMachine(UEFITestsBase):
             f.write(DEFAULT_METADATA)
         with open(os.path.join(self.autopkgtest_dir.name, 'user-data'), 'w') as f:
             f.write(DEFAULT_USERDATA)
+        with open(os.path.join(self.autopkgtest_dir.name, 'network-config'), 'w') as f:
+            f.write('')
 
         subprocess.run(['genisoimage', '-output', 'cloud-init.seed',
                         '-volid', 'cidata', '-joliet', '-rock',
-                        '-quiet', 'user-data', 'meta-data'],
+                        '-quiet', 'user-data', 'meta-data', 'network-config'],
                        cwd=self.autopkgtest_dir.name)
 
     def list(self, path='/etc/'):
@@ -225,7 +230,7 @@ class UEFIVirtualMachine(UEFITestsBase):
     def update(self, src=None, dst=None):
         self._mount()
         try:
-            os.makedirs(os.path.join(self.autopkgtest_dir.name, 'img', os.path.dirname(src)))
+            os.makedirs(os.path.join(self.autopkgtest_dir.name, 'img', os.path.dirname(dst)))
         except FileExistsError:
             pass
         shutil.copy(src, os.path.join(self.autopkgtest_dir.name, 'img', dst))
@@ -234,8 +239,11 @@ class UEFIVirtualMachine(UEFITestsBase):
     def run(self):
         self.prepare()
         # start qemu-system-$arch, output log to serial and capture to variable
-        subprocess.run([self.qemu_arch, '-m', '1024', '-nographic',
+        subprocess.run([self.qemu_arch] + self.uefi_qemu_extra + [
+                        '-m', '1024', '-nographic',
                         '-serial', 'mon:stdio',
+                        '-netdev', 'user,id=network0',
+                        '-device', 'virtio-net-pci,netdev=network0,mac=52:54:00:12:34:56',
                         '-drive', 'file=%s,if=pflash,format=raw,unit=0,readonly=on' % self.uefi_code_path,
                         '-drive', 'file=%s.VARS.fd,if=pflash,format=raw,unit=1' % self.path,
                         '-drive', 'file=%s,if=none,id=harddrive0,format=qcow2' % self.path,
@@ -246,7 +254,7 @@ class UEFIVirtualMachine(UEFITestsBase):
         """Returns true if the VM is booted and ready at userland"""
         # check captured serial for our marker
         self._mount()
-        result = os.path.exists(os.path.join(self.autopkgtest_dir.name, 'img', '/var/lib/cloud/instances/nocloud/boot-finished'))
+        result = os.path.exists(os.path.join(self.autopkgtest_dir.name, 'img', 'TESTOK'))
         self._unmount()
         return result
 
