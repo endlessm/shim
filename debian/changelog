@@ -1,7 +1,15 @@
-shim (15.7-2) UNRELEASED; urgency=medium
+shim (15.8-1) UNRELEASED; urgency=medium
 
   [ Steve McIntyre ]
   * Cope with changes in pesign packaging.
+  * New upstream release fixing more bugs
+  * Remove all our existing patches, no longer needed:
+    + Make-sbat_var.S-parse-right-with-buggy-gcc-binutils.patch (now
+      upstream)
+    + Enable-NX.patch (we don't want NX just yet until the whole boot
+      stack is NX-capable)
+    + block-grub-sbat3-debian.patch (not needed now upstream grub SBAT
+      is 4)
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu
@@ -9,7 +17,7 @@ shim (15.7-2) UNRELEASED; urgency=medium
     shim-unsigned:i386", thanks to adrian15 adrian15 (Closes: #936009).
   * Fix debian/watch and check signature
 
- -- Bastien Roucariès <rouca@debian.org>  Mon, 29 Apr 2024 09:55:13 +0000
+ -- Steve McIntyre <93sam@debian.org>  Thu, 25 Apr 2024 22:16:12 +0100
 
 shim (15.7-1) unstable; urgency=medium
 
