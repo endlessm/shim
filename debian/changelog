@@ -10,6 +10,7 @@ shim (15.8-1) UNRELEASED; urgency=medium
       stack is NX-capable)
     + block-grub-sbat3-debian.patch (not needed now upstream grub SBAT
       is 4)
+  * Log if the build is nx-compatible or not
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu

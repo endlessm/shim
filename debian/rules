@@ -81,7 +81,12 @@ override_dh_auto_install:
 	# And remove the extra removable-media copy of shim too, it's
 	# not needed for our build and causes debhelper to complain
 	rm -f debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
+
+	# Generate the template packages that we'll use for SB signing later
 	./debian/signing-template.generate
+
+	# Log some useful things about the build here
+	./debian/check_nx shim*.efi
 	sha256sum *.efi
 
 generate-gnu-efi:

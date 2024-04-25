@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Helper script - check if a binary is tagged as NX-compatible or not.
+
+set -e
+
+for FILE in "$@"; do
+
+    if [ ! -f "${FILE}" ]; then
+	echo "${FILE} does not exist. ABORT."
+	exit 1
+    fi
+
+    echo "Checking NX bit on ${FILE}:"
+    DLL_CHARACTERISTICS=$(objdump -x "${FILE}" | awk '/DllCharacteristics/ {print $2}')
+
+    echo "  DllCharacteristics $DLL_CHARACTERISTICS"
+    case $DLL_CHARACTERISTICS in
+	00000000)
+	    echo "  NOT tagged as NX-compatible"
+	    ;;
+	00000100)
+	    echo "  tagged as NX-compatible"
+	    ;;
+	*)
+	    echo "  UNRECOGNISED value, ABORT";
+	    exit 1
+	    ;;
+    esac
+
+done
+
