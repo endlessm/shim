@@ -1,0 +1,47 @@
+From 3e1394e8e6fd0071a69196230f991612a960c154 Mon Sep 17 00:00:00 2001
+From: Julian Andres Klode <julian.klode@canonical.com>
+Date: Tue, 9 Apr 2024 18:55:12 +0200
+Subject: [PATCH 2/2] sbat: Also bump latest for grub,4 (and to todays date)
+
+Back in January we decided to bump the SBAT level for the shim
+CVE without bumping the grub level for the previous NTFS issues
+- CVE-2023-4692 CVE-2023-4693 - as not every vendor was signing
+the ntfs module.
+
+Catch up on this revocation to ensure it doesn't get lost. Doing
+so also allows us to remove the grub.debian,4 revocation as this
+happened before grub,4 and hence is obsolete.
+
+Also bump the date of the sbat variable to today's. Don't copy
+the April 5 one to a previous selection, as it wasn't shipped
+to anyone.
+
+Signed-off-by: Julian Andres Klode <julian.klode@canonical.com>
+---
+ include/sbat_var_defs.h | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/include/sbat_var_defs.h b/include/sbat_var_defs.h
+index 04d708f2..5c7115b9 100644
+--- a/include/sbat_var_defs.h
++++ b/include/sbat_var_defs.h
+@@ -58,10 +58,13 @@
+ 	SBAT_VAR_AUTOMATIC_REVOCATIONS
+ 
+ /*
+- * Revocations for January 2024 shim CVEs + Debian/Ubuntu (peimage) CVE-2024-2312
++ * Revocations for:
++ * - January 2024 shim CVEs
++ * - October 2023 grub CVEs
++ * - Debian/Ubuntu (peimage) CVE-2024-2312
+  */
+-#define SBAT_VAR_LATEST_DATE "2024040500"
+-#define SBAT_VAR_LATEST_REVOCATIONS "shim,4\ngrub,3\ngrub.debian,4\ngrub.peimage,2\n"
++#define SBAT_VAR_LATEST_DATE "2024040900"
++#define SBAT_VAR_LATEST_REVOCATIONS "shim,4\ngrub,4\ngrub.peimage,2\n"
+ #define SBAT_VAR_LATEST \
+ 	SBAT_VAR_SIG SBAT_VAR_VERSION SBAT_VAR_LATEST_DATE "\n" \
+ 	SBAT_VAR_LATEST_REVOCATIONS
+-- 
+2.39.2
+
