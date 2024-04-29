@@ -5,8 +5,11 @@ shim (15.7-2) UNRELEASED; urgency=medium
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu
+  * Import MR-12: "shim-unsigned:amd64 cannot be installed alongside
+    shim-unsigned:i386", thanks to adrian15 adrian15 (Closes: #936009).
+  * Fix debian/watch and check signature
 
- -- Bastien Roucariès <rouca@debian.org>  Mon, 15 Apr 2024 14:15:58 +0000
+ -- Bastien Roucariès <rouca@debian.org>  Mon, 29 Apr 2024 09:55:13 +0000
 
 shim (15.7-1) unstable; urgency=medium
 

@@ -1,5 +1,5 @@
 # Compulsory line, this is a version 4 file
 version=4
-
-opts="repack,compression=xz,filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/shim-$1\.tar\.gz/" \
-  https://github.com/rhboot/shim/releases .*/v?(\d\S*)\.tar\.gz
+opts="repack,compression=xz,pgpmode=auto,searchmode=plain" \
+    https://api.github.com/repos/rhboot/shim/releases?per_page=100 \
+    https://github.com/rhboot/shim/releases/download/[^/]+/@PACKAGE@-@ANY_VERSION@@ARCHIVE_EXT@

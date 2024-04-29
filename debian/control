@@ -23,6 +23,7 @@ Architecture: amd64 arm64 i386
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: shim (<< 15+1533136590.3beb971-3~),
 Replaces: shim (<< 15+1533136590.3beb971-3~),
+Multi-Arch: same
 Description: boot loader to chain-load signed boot loaders under Secure Boot
  This package provides a minimalist boot loader which allows verifying
  signatures of other UEFI binaries against either the Secure Boot DB/DBX or
