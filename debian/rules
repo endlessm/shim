@@ -48,6 +48,11 @@ COMMON_OPTIONS += \
 	CC=$(DEB_HOST_GNU_TYPE)-gcc-12 \
 	$(NULL)
 
+# Force shim to use the latest revocations by default to block some
+# older grub / peimage issues. This is:
+# "shim,4\ngrub,4\ngrub.peimage,2\n"
+COMMON_OPTIONS += SBAT_AUTOMATIC_DATE=2024010900
+
 $(DBX_LIST): $(DBX_HASHES)
 	./debian/generate_dbx_list $(EFI_ARCH) $< $@
 
