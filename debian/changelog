@@ -1,4 +1,4 @@
-shim (15.8-1) UNRELEASED; urgency=medium
+shim (15.8-1~deb12u1) UNRELEASED; urgency=medium
 
   [ Steve McIntyre ]
   * Cope with changes in pesign packaging.
@@ -17,7 +17,6 @@ shim (15.8-1) UNRELEASED; urgency=medium
   * Force shim to use the latest revocations by default to block some
     older grub / peimage issues. This is:
     "shim,4\ngrub,4\ngrub.peimage,2\n"
-
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu
