@@ -1,4 +1,4 @@
-shim (15.8-1~deb12u1) UNRELEASED; urgency=medium
+shim (15.8-1~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]
   * Cope with changes in pesign packaging.
@@ -24,7 +24,7 @@ shim (15.8-1~deb12u1) UNRELEASED; urgency=medium
     shim-unsigned:i386", thanks to adrian15 adrian15 (Closes: #936009).
   * Fix debian/watch and check signature
 
- -- Steve McIntyre <93sam@debian.org>  Thu, 25 Apr 2024 22:16:12 +0100
+ -- Steve McIntyre <93sam@debian.org>  Sat, 04 May 2024 14:21:04 +0100
 
 shim (15.7-1) unstable; urgency=medium
 
