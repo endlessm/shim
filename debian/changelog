@@ -19,6 +19,7 @@ shim (15.8-1~deb12u1) bookworm; urgency=medium
     "shim,4\ngrub,4\ngrub.peimage,2\n"
   * Install a copy of the Debian CA certificate into /usr/share/shim.
     Closes: #1069054
+  * Clean up better after build. Closes: #1046268
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu
