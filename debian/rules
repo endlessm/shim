@@ -87,6 +87,8 @@ override_dh_auto_install:
 	# not needed for our build and causes debhelper to complain
 	rm -f debian/tmp/boot/efi/EFI/BOOT/BOOT*.EFI
 
+	install -m 644 $(cert) debian/shim-unsigned/usr/share/shim
+
 	# Generate the template packages that we'll use for SB signing later
 	./debian/signing-template.generate
 

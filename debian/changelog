@@ -17,6 +17,8 @@ shim (15.8-1~deb12u1) bookworm; urgency=medium
   * Force shim to use the latest revocations by default to block some
     older grub / peimage issues. This is:
     "shim,4\ngrub,4\ngrub.peimage,2\n"
+  * Install a copy of the Debian CA certificate into /usr/share/shim.
+    Closes: #1069054
 
   [ Bastien Roucariès ]
   * Port autopkgtest from ubuntu
