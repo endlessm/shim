@@ -1,3 +1,19 @@
+shim (15.8-1~deb12u1endless1) master; urgency=medium
+
+  [ Dan Nicholson ]
+  * Don't repack upstream tarballs
+  * Add Endless gbp configuration
+  * Handle duplicate boot entries due to changing ESP UUID
+
+  [ João Paulo Rechi Vita ]
+  * Create shim-efi-image package
+  * Vendor customization for Endless OS
+
+  [ Dan Nicholson ]
+  * Add vendor dbx file with revoked signing certificates
+
+ -- Dan Nicholson <dbn@endlessos.org>  Wed, 21 Aug 2024 10:56:33 -0600
+
 shim (15.8-1~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]
