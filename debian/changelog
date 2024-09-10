@@ -1,3 +1,9 @@
+shim (15.8-1~deb12u1endless2) master; urgency=medium
+
+  * Drop downstream fallback patches (T31604)
+
+ -- Dan Nicholson <dbn@endlessos.org>  Tue, 10 Sep 2024 09:01:50 -0600
+
 shim (15.8-1~deb12u1endless1) master; urgency=medium
 
   [ Dan Nicholson ]
