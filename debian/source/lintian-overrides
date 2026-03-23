@@ -1,0 +1,3 @@
+shim: source-contains-prebuilt-windows-binary [test-data/grubx64.0.76.el7.1.efi]
+shim: source-contains-prebuilt-windows-binary [test-data/grubx64.0.76.el7.efi]
+shim: source-contains-prebuilt-windows-binary [test-data/grubx64.0.80.el7.efi]

@@ -1,3 +1,30 @@
+shim (16.1-1~deb12u1) UNRELEASED; urgency=medium
+
+  [ Steve McIntyre ]
+  * Backport new shim release to bookworm
+  * Disable NX for the bookworm build
+    - We don't have a complete NX boot chain here.
+
+ -- Steve McIntyre <93sam@debian.org>  Mon, 23 Mar 2026 21:05:04 +0100
+
+shim (16.1-1) unstable; urgency=medium
+
+  * New upstream release: 16.1
+  * Switch to gcc-14
+  * Drop old patches, no longer needed
+    + 0001-sbat-Add-grub.peimage-2-to-latest-CVE-2024-2312.patch
+    + 0002-sbat-Also-bump-latest-for-grub-4-and-to-todays-date.patch
+  * Add new patch from upstream:
+    + 0001-Fix-build-with-binutils-2.46.patch. Closes: #1125741
+  * Add lintian overrides:
+    + Ignore included binaries for unit tests
+  * Bump SBAT revocation level to 2024040900 aka
+    "shim,4\ngrub,4\ngrub.peimage,2\n"
+  * Enable NX for the sid/forky build
+    + We should have a complete NX boot chain now...
+
+ -- Steve McIntyre <93sam@debian.org>  Mon, 23 Mar 2026 20:19:01 +0000
+
 shim (15.8-1~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]

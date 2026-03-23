@@ -38,7 +38,7 @@ endif
 
 COMMON_OPTIONS += \
 	RELEASE=$(plain_upstream_version) \
-	COMMIT_ID=657b2483ca6e9fcf2ad8ac7ee577ff546d24c3aa \
+	COMMIT_ID=afc49558b34548644c1cd0ad1b6526a9470182ed \
 	MAKELEVEL=0 \
 	ENABLE_HTTPBOOT=true \
 	VENDOR_CERT_FILE=$(cert) \
@@ -51,7 +51,10 @@ COMMON_OPTIONS += \
 # Force shim to use the latest revocations by default to block some
 # older grub / peimage issues. This is:
 # "shim,4\ngrub,4\ngrub.peimage,2\n"
-COMMON_OPTIONS += SBAT_AUTOMATIC_DATE=2024010900
+COMMON_OPTIONS += SBAT_AUTOMATIC_DATE=2024040900
+
+# Disable NX for this build
+COMMON_OPTIONS += "POST_PROCESS_PE_FLAGS=-N"
 
 $(DBX_LIST): $(DBX_HASHES)
 	./debian/generate_dbx_list $(EFI_ARCH) $< $@
