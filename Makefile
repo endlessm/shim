@@ -1,7 +1,7 @@
 default : all
 
 NAME		= shim
-VERSION		= 15.8
+VERSION		= 16.1
 ifneq ($(origin RELEASE),undefined)
 DASHRELEASE	?= -$(RELEASE)
 else
@@ -38,12 +38,12 @@ CFLAGS += -DENABLE_SHIM_CERT
 else
 TARGETS += $(MMNAME) $(FBNAME)
 endif
-OBJS	= shim.o globals.o mok.o netboot.o cert.o replacements.o tpm.o version.o errlog.o sbat.o sbat_data.o sbat_var.o pe.o pe-relocate.o httpboot.o csv.o load-options.o
+OBJS	= shim.o globals.o memattrs.o mok.o netboot.o cert.o dp.o loader-proto.o tpm.o version.o errlog.o sbat.o sbat_data.o sbat_var.o pe.o pe-relocate.o httpboot.o csv.o load-options.o utils.o verify.o
 KEYS	= shim_cert.h ocsp.* ca.* shim.crt shim.csr shim.p12 shim.pem shim.key shim.cer
-ORIG_SOURCES	= shim.c globals.c mok.c netboot.c replacements.c tpm.c errlog.c sbat.c pe.c pe-relocate.c httpboot.c shim.h version.h $(wildcard include/*.h) cert.S sbat_var.S
-MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o globals.o
+ORIG_SOURCES	= shim.c globals.c memattrs.c mok.c netboot.c dp.c loader-proto.c tpm.c errlog.c sbat.c pe.c pe-relocate.c httpboot.c verify.c shim.h version.h $(wildcard include/*.h) cert.S sbat_var.S
+MOK_OBJS = MokManager.o PasswordCrypt.o crypt_blowfish.o errlog.o sbat_data.o globals.o dp.o
 ORIG_MOK_SOURCES = MokManager.c PasswordCrypt.c crypt_blowfish.c shim.h $(wildcard include/*.h)
-FALLBACK_OBJS = fallback.o tpm.o errlog.o sbat_data.o globals.o
+FALLBACK_OBJS = fallback.o tpm.o errlog.o sbat_data.o globals.o utils.o
 ORIG_FALLBACK_SRCS = fallback.c
 SBATPATH = $(TOPDIR)/data/sbat.csv
 
@@ -69,16 +69,24 @@ ifneq ($(origin FALLBACK_VERBOSE_WAIT), undefined)
 	CFLAGS += -DFALLBACK_VERBOSE_WAIT=$(FALLBACK_VERBOSE_WAIT)
 endif
 
-all: confcheck $(TARGETS)
+all: confcheck certcheck $(TARGETS)
 
 confcheck:
 ifneq ($(origin EFI_PATH),undefined)
 	$(error EFI_PATH is no longer supported, you must build using the supplied copy of gnu-efi)
 endif
 
+certcheck:
+ifneq ($(origin VENDOR_CERT_FILE), undefined)
+	@if grep -q "BEGIN" $(VENDOR_CERT_FILE); then \
+		echo "$(VENDOR_CERT_FILE) is PEM-format, convert to DER!"; \
+		exit 1; \
+	fi
+endif
+
 compile_commands.json : Makefile Make.rules Make.defaults 
 	make clean
-	bear -- make COMPILER=clang test all
+	bear -- make COMPILER=clang WARNFLAGS+="-Wno-#warnings" test all
 	sed -i \
 		-e 's/"-maccumulate-outgoing-args",//g' \
 		$@
@@ -91,6 +99,7 @@ shim.crt:
 
 shim.cer: shim.crt
 	$(OPENSSL) x509 -outform der -in $< -out $@
+
 
 .NOTPARALLEL: shim_cert.h
 shim_cert.h: shim.cer
@@ -113,7 +122,11 @@ shim.o: $(SOURCES)
 ifneq ($(origin ENABLE_SHIM_CERT),undefined)
 shim.o: shim_cert.h
 endif
+# Both of these need to be here so that when TOPDIR is unset, make isn't trying
+# to match against ./sbat_var.S, which isn't a target it will ever try to build.
+$(TOPDIR)/sbat_var.S sbat_var.S: generated_sbat_var_defs.h
 shim.o: $(wildcard $(TOPDIR)/*.h)
+
 
 sbat.%.csv : data/sbat.%.csv
 	$(DOS2UNIX) $(D2UFLAGS) $< $@
@@ -179,6 +192,13 @@ lib/lib.a: | $(TOPDIR)/lib/Makefile $(wildcard $(TOPDIR)/include/*.[ch])
 
 post-process-pe : $(TOPDIR)/post-process-pe.c
 	$(HOSTCC) -std=gnu11 -Og -g3 -Wall -Wextra -Wno-missing-field-initializers -Werror -o $@ $<
+
+generate_sbat_var_defs: $(TOPDIR)/generate_sbat_var_defs.c
+	$(HOSTCC) -std=gnu11 -Og -g3 -Wall -Wextra -Wno-missing-field-initializers -Werror -o $@ $<
+
+.NOTPARALLEL: generated_sbat_var_defs.h
+generated_sbat_var_defs.h: generate_sbat_var_defs
+	./generate_sbat_var_defs $(TOPDIR) > $@
 
 buildid : $(TOPDIR)/buildid.c
 	$(HOSTCC) -I/usr/include -Og -g3 -Wall -Werror -Wextra -o $@ $< -lelf
@@ -261,6 +281,7 @@ endif
 		-j .dynamic -j .rodata -j .rel* \
 		-j .rela* -j .dyn -j .reloc -j .eh_frame \
 		-j .vendor_cert -j .sbat -j .sbatlevel \
+		--file-alignment 0x1000 \
 		$(FORMAT) $< $@
 	./post-process-pe -vv $(POST_PROCESS_PE_FLAGS) $@
 
@@ -280,6 +301,7 @@ endif
 		-j .debug_info -j .debug_abbrev -j .debug_aranges \
 		-j .debug_line -j .debug_str -j .debug_ranges \
 		-j .note.gnu.build-id \
+		--file-alignment 0x1000 \
 		$< $@
 
 ifneq ($(origin ENABLE_SBSIGN),undefined)
@@ -302,7 +324,7 @@ fuzz fuzz-clean fuzz-coverage fuzz-lto :
 		EFI_INCLUDES="$(EFI_INCLUDES)" \
 		fuzz-clean $@
 
-test test-clean test-coverage test-lto :
+test test-clean test-coverage test-lto : generated_sbat_var_defs.h
 	@make -f $(TOPDIR)/include/test.mk \
 		COMPILER="$(COMPILER)" \
 		CROSS_COMPILE="$(CROSS_COMPILE)" \
@@ -346,6 +368,7 @@ clean-lib-objs:
 clean-shim-objs:
 	@rm -rvf $(TARGET) *.o $(SHIM_OBJS) $(MOK_OBJS) $(FALLBACK_OBJS) $(KEYS) certdb $(BOOTCSVNAME)
 	@rm -vf *.debug *.so *.efi *.efi.* *.tar.* version.c buildid post-process-pe compile_commands.json
+	@rm -vf generate_sbat_var_defs generated_sbat_var_defs.h
 	@rm -vf Cryptlib/*.[oa] Cryptlib/*/*.[oa]
 	@if [ -d .git ] ; then git clean -f -d -e 'Cryptlib/OpenSSL/*'; fi
 
@@ -361,7 +384,7 @@ clean-cryptlib-objs:
 
 clean: clean-shim-objs clean-fuzz-objs clean-test-objs clean-gnu-efi clean-openssl-objs clean-cryptlib-objs clean-lib-objs
 
-GITTAG = $(VERSION)
+GITTAG = $(shell echo $(VERSION) | sed 's/~/-/g')
 
 test-archive:
 	@./make-archive $(if $(call get-config,shim.origin),--origin "$(call get-config,shim.origin)") --test "$(VERSION)"
@@ -377,3 +400,4 @@ archive: tag
 
 export ARCH CC CROSS_COMPILE LD OBJCOPY EFI_INCLUDE EFI_INCLUDES OPTIMIZATIONS
 export FEATUREFLAGS WARNFLAGS WERRFLAGS
+unexport CFLAGS CPPFLAGS LDFLAGS

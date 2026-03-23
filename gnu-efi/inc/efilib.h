@@ -79,10 +79,16 @@ extern EFI_GUID gEfiDiskIoProtocolGuid;
 #define DiskIoProtocol gEfiDiskIoProtocolGuid
 extern EFI_GUID gEfiDiskIo2ProtocolGuid;
 #define DiskIo2Protocol gEfiDiskIo2ProtocolGuid
+extern EFI_GUID gEfiDxeServicesTableGuid;
+#define DxeServicesTable gEfiDxeServicesTableGuid
 extern EFI_GUID gEfiSimpleFileSystemProtocolGuid;
 #define FileSystemProtocol gEfiSimpleFileSystemProtocolGuid
+extern EFI_GUID gEfiLoadedImageDevicePathProtocolGuid;
+#define LoadedImageDevicePathProtocol gEfiLoadedImageDevicePathProtocolGuid
 extern EFI_GUID gEfiLoadFileProtocolGuid;
 #define LoadFileProtocol gEfiLoadFileProtocolGuid
+extern EFI_GUID gEfiLoadFile2ProtocolGuid;
+#define LoadFile2Protocol gEfiLoadFile2ProtocolGuid
 extern EFI_GUID gEfiDeviceIoProtocolGuid;
 #define DeviceIoProtocol gEfiDeviceIoProtocolGuid
 extern EFI_GUID VariableStoreProtocol;
@@ -589,6 +595,14 @@ AsciiVSPrint(
     IN  CONST CHAR8   *fmt,
     __builtin_ms_va_list args
 );
+
+UINTN EFIAPI
+AsciiSPrint (
+    OUT CHAR8         *Str,
+    IN UINTN          StrSize,
+    IN CONST CHAR8    *fmt,
+    ...
+    );
 
 VOID
 ValueToHex (

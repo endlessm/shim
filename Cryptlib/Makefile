@@ -14,6 +14,9 @@ INCLUDES	= -I$(CRYPTDIR) -I$(CRYPTDIR)/Include \
 WARNFLAGS	+= -Wno-unused-parameter \
 		   -Wno-unused-but-set-variable
 
+WERRFLAGS	+= -Wno-error=unused-but-set-variable \
+		   -Wno-error=unused-parameter
+
 CFLAGS		= $(FEATUREFLAGS) \
 		  $(OPTIMIZATIONS) \
 		  $(WARNFLAGS) \
@@ -36,6 +39,9 @@ DEFINES		+= -DMDE_CPU_AARCH64
 endif
 ifeq ($(ARCH),arm)
 DEFINES		+= -DMDE_CPU_ARM
+endif
+ifeq ($(ENABLE_CODESIGN_EKU),1)
+DEFINES += -DENABLE_CODESIGN_EKU
 endif
 
 LDFLAGS		= -nostdlib -znocombreloc
@@ -66,6 +72,10 @@ OBJS		=   Hash/CryptMd4Null.o \
 		    SysCall/TimerWrapper.o \
 		    SysCall/BaseMemAllocation.o \
 		    SysCall/BaseStrings.o
+
+ifeq ($(ENABLE_CODESIGN_EKU),1)
+	OBJS += Pk/CryptPkcs7VerifyEku.o
+endif
 
 all: $(TARGET)
 

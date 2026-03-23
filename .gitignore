@@ -38,6 +38,8 @@ Make.local
 /crash-*
 /fuzz-*
 !/fuzz-*.c
+/generate_sbat_var_defs
+/generated_sbat_var_defs.h
 /leak-*
 /post-process-pe
 /random.bin
@@ -50,3 +52,11 @@ shim_cert.h
 !/test-data/
 /test-random.h
 version.c
+/.vscode/
+/.mkosi-private/
+/mkosi.tools/
+/mkosi.tools.manifest
+/mkosi/mkosi.builddir/
+/mkosi/mkosi.cache/
+/mkosi/mkosi.local.conf
+/mkosi/mkosi.output/

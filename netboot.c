@@ -16,6 +16,16 @@
 #define ntohs(x) __builtin_bswap16(x)	/* supported both by GCC and clang */
 #define htons(x) ntohs(x)
 
+/* TFTP error codes from RFC 1350 */
+#define TFTP_ERROR_NOT_DEFINED  0  /* Not defined, see error message (if any). */
+#define TFTP_ERROR_NOT_FOUND    1  /* File not found. */
+#define TFTP_ERROR_ACCESS       2  /* Access violation. */
+#define TFTP_ERROR_NO_SPACE     3  /* Disk full or allocation exceeded. */
+#define TFTP_ERROR_ILLEGAL_OP   4  /* Illegal TFTP operation. */
+#define TFTP_ERROR_UNKNOWN_ID   5  /* Unknown transfer ID. */
+#define TFTP_ERROR_EXISTS       6  /* File already exists. */
+#define TFTP_ERROR_NO_USER      7  /* No such user. */
+
 static EFI_PXE_BASE_CODE *pxe;
 static EFI_IP_ADDRESS tftp_addr;
 static CHAR8 *full_path;
@@ -116,6 +126,7 @@ static CHAR16 str2ns(CHAR8 *str)
 
 static CHAR8 *str2ip6(CHAR8 *str)
 {
+	bool double_colon_found = false;
 	UINT8 i = 0, j = 0, p = 0;
 	size_t len = 0, dotcount = 0;
 	enum { MAX_IP6_DOTS = 7 };
@@ -137,6 +148,23 @@ static CHAR8 *str2ip6(CHAR8 *str)
 
 	len = strlen(str);
 	a = b = str;
+
+	for (i = 0; i < len; i++) {
+                if (str[i] == ':') {
+                        if (i+1 < (UINT8)len && str[i+1] == ':') {
+                                if (double_colon_found)
+                                        return (CHAR8 *)ip;
+                                double_colon_found = true;
+                        }
+                }
+                else {
+                        if (str[i] < '0' || (str[i] > '9' && str[i] < 'A') ||
+                           (str[i] > 'F' && str[i] < 'a') || str[i] > 'f')
+                                return (CHAR8 *)ip;
+                }
+        }
+
+
 	for (i = p = 0; i < len; i++, b++) {
 		if (*b != ':')
 			continue;
@@ -147,15 +175,20 @@ static CHAR8 *str2ip6(CHAR8 *str)
 		if (b[1] == ':' )
 			break;
 	}
-	a = b = (str + len);
-	for (j = len, p = 7; j > i; j--, a--) {
-		if (*a != ':')
-			continue;
-		t = *b;
-		*b = '\0';
-		ip[p--] = str2ns(a+1);
-		*b = t;
-		b = a;
+
+	if (i == len) {
+		ip[p++] = str2ns(a);
+	} else {
+		a = b = (str + len);
+		for (j = len, p = 7; j > i; j--, a--) {
+			if (*a != ':')
+				continue;
+			t = *b;
+			*b = '\0';
+			ip[p--] = str2ns(a+1);
+			*b = t;
+			b = a;
+		}
 	}
 	return (CHAR8 *)ip;
 }
@@ -333,7 +366,33 @@ EFI_STATUS parseNetbootinfo(EFI_HANDLE image_handle UNUSED, CHAR8 *netbootname)
 	return efi_status;
 }
 
-EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle UNUSED, VOID **buffer, UINT64 *bufsiz)
+/* Convert a TFTP error code to an EFI status code. */
+static EFI_STATUS
+status_from_error(UINT8 error_code)
+{
+	switch (error_code) {
+	case TFTP_ERROR_NOT_FOUND:
+		return EFI_NOT_FOUND;
+	case TFTP_ERROR_ACCESS:
+	case TFTP_ERROR_NO_USER:
+		return EFI_ACCESS_DENIED;
+	case TFTP_ERROR_NO_SPACE:
+		return EFI_VOLUME_FULL;
+	case TFTP_ERROR_ILLEGAL_OP:
+		return EFI_PROTOCOL_ERROR;
+	case TFTP_ERROR_UNKNOWN_ID:
+		return EFI_INVALID_PARAMETER;
+	case TFTP_ERROR_EXISTS:
+		return EFI_WRITE_PROTECTED;
+	case TFTP_ERROR_NOT_DEFINED:
+	default:
+		/* Use a generic TFTP error for anything else. */
+		return EFI_TFTP_ERROR;
+	}
+}
+
+EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle UNUSED, VOID **buffer,
+	UINT64 *bufsiz, int flags)
 {
 	EFI_STATUS efi_status;
 	EFI_PXE_BASE_CODE_TFTP_OPCODE read = EFI_PXE_BASE_CODE_TFTP_READ_FILE;
@@ -341,7 +400,8 @@ EFI_STATUS FetchNetbootimage(EFI_HANDLE image_handle UNUSED, VOID **buffer, UINT
 	BOOLEAN nobuffer = FALSE;
 	UINTN blksz = 512;
 
-	console_print(L"Fetching Netboot Image %a\n", full_path);
+	if (~flags & SUPPRESS_NETBOOT_OPEN_FAILURE_NOISE)
+		console_print(L"Fetching Netboot Image %a\n", full_path);
 	if (*buffer == NULL) {
 		*buffer = AllocatePool(4096 * 1024);
 		if (!*buffer)
@@ -362,8 +422,31 @@ try_again:
 		goto try_again;
 	}
 
-	if (EFI_ERROR(efi_status) && *buffer) {
-		FreePool(*buffer);
+	if (EFI_ERROR(efi_status)) {
+		if (pxe->Mode->TftpErrorReceived) {
+			if (~flags & SUPPRESS_NETBOOT_OPEN_FAILURE_NOISE)
+				console_print(L"TFTP error %u: %a\n",
+				      pxe->Mode->TftpError.ErrorCode,
+				      pxe->Mode->TftpError.ErrorString);
+
+			efi_status = status_from_error(pxe->Mode->TftpError.ErrorCode);
+		} else if (efi_status == EFI_TFTP_ERROR) {
+			/*
+			 * Unfortunately, some firmware doesn't fill in the
+			 * error details. Treat all TFTP errors like file not
+			 * found so shim falls back to the default loader.
+			 *
+			 * https://github.com/tianocore/edk2/pull/6287
+			 */
+			if (~flags & SUPPRESS_NETBOOT_OPEN_FAILURE_NOISE)
+				console_print(L"Unknown TFTP error, treating "
+					"as file not found\n");
+			efi_status = EFI_NOT_FOUND;
+		}
+
+		if (*buffer) {
+			FreePool(*buffer);
+		}
 	}
 	return efi_status;
 }

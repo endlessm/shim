@@ -109,7 +109,7 @@ INCLUDES	= -nostdinc \
 
 override DEFAULT_FEATUREFLAGS = \
 		-std=gnu11 \
-		-ggdb \
+		-ggdb -gdwarf-4 -gstrict-dwarf \
 		-ffreestanding \
 		$(shell $(CC) -fmacro-prefix-map=./=./ -E -x c /dev/null >/dev/null 2>&1 && echo -fmacro-prefix-map='$(TOPDIR)/=$(DEBUGSRC)') \
 		-fno-stack-protector \
@@ -147,10 +147,6 @@ endif
 
 ifneq ($(origin REQUIRE_TPM), undefined)
 	DEFINES  += -DREQUIRE_TPM
-endif
-
-ifneq ($(origin DISABLE_EBS_PROTECTION), undefined)
-	DEFINES  += -DDISABLE_EBS_PROTECTION
 endif
 
 ifneq ($(origin DISABLE_REMOVABLE_LOAD_OPTIONS), undefined)
@@ -200,5 +196,7 @@ endif
 ifneq ($(VERBOSE),)
 export VERBOSE
 endif
+
+export DEFINES
 
 # vim:filetype=make

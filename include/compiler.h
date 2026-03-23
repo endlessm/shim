@@ -175,13 +175,18 @@
 #define BUILD_BUG_ON_MSG(cond, msg) compiletime_assert(!(cond), msg)
 #endif
 
-#ifndef ALIGN
+#ifndef __ALIGN
 #define __ALIGN_MASK(x, mask)   (((x) + (mask)) & ~(mask))
 #define __ALIGN(x, a)           __ALIGN_MASK(x, (typeof(x))(a) - 1)
+#endif
+#ifndef ALIGN
 #define ALIGN(x, a)             __ALIGN((x), (a))
 #endif
 #ifndef ALIGN_DOWN
 #define ALIGN_DOWN(x, a)        __ALIGN((x) - ((a) - 1), (a))
+#endif
+#ifndef ALIGN_UP
+#define ALIGN_UP(addr, align) (((addr) + (typeof (addr)) (align) - 1) & ~((typeof (addr)) (align) - 1))
 #endif
 
 #define MIN(a, b) ({(a) < (b) ? (a) : (b);})
@@ -205,6 +210,7 @@
 #define GNUC_PREREQ(maj, min) 0
 #endif
 
+#if !defined(CLANG_PREREQ)
 #if defined(__clang__) && defined(__clang_major__) && defined(__clang_minor__)
 #define CLANG_PREREQ(maj, min)        \
 	((__clang_major__ > (maj)) || \
@@ -212,6 +218,7 @@
 #else
 #define CLANG_PREREQ(maj, min) 0
 #endif
+#endif /* CLANG_PREREQ */
 
 #if GNUC_PREREQ(5, 1) || CLANG_PREREQ(3, 8)
 #define checked_add(addend0, addend1, sum) \

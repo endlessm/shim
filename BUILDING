@@ -37,15 +37,6 @@ Variables you could set to customize the build:
   debugger only on the development branch and not the OS you need to boot
   to scp in a new development build.  Likewise, we look for
   SHIM_DEVEL_VERBOSE rather than SHIM_VERBOSE.
-- DISABLE_EBS_PROTECTION
-  On systems where a second stage bootloader is not used, and the Linux
-  Kernel is embedded in the same EFI image as shim and booted directly
-  from shim, shim's ExitBootServices() hook can cause problems as the
-  kernel never calls the shim's verification protocol.  In this case
-  calling the shim verification protocol is unnecessary and redundant as
-  shim has already verified the kernel when shim loaded the kernel as the
-  second stage loader.  In such a case, and only in this case, you should
-  use DISABLE_EBS_PROTECTION=y to build.
 - DISABLE_REMOVABLE_LOAD_OPTIONS
   Do not parse load options when invoked as boot*.efi. This prevents boot
   failures because of unexpected data in boot entries automatically generated
@@ -81,11 +72,24 @@ Variables you could set to customize the build:
 - POST_PROCESS_PE_FLAGS
   This allows you to add flags to the invocation of "post-process-pe", for
   example to disable the NX compatibility flag.
+- ENABLE_CODESIGN_EKU
+  This changes the certificate validation logic to require Extended Key
+  Usage 1.3.6.1.5.5.7.3.3 ("Code Signing").
 
 Vendor SBAT data:
 It will sometimes be requested by reviewers that a build includes extra
 .sbat data.  The mechanism to do so is to add a CSV file in data/ with the
 name sbat.FOO.csv, where foo is your EFI subdirectory name.  The build
 system will automatically include any such files.
+
+Building and booting local VM to test shim changes with other 2nd/3rd stages:
+- pick the target distribution of your choice, currently supported are Fedora/CentOS/Debian/Ubuntu
+- ensure the package manager for the target distribution is installed locally - dnf+rpm or apt+dpkg
+- install python3
+- have mkosi available, either via the distribution, or pip, or having bin/mkosi in PATH from git clone of https://github.com/systemd/mkosi
+- (one time step) mkosi genkey
+- mkosi sandbox -- mkosi --firmware-variables mkosi/mkosi.output/ovmf_vars.fd --distribution <distro> qemu
+- this will build and cache a local VM, build shim in it, and boot it with systemd-boot and a UKI by default
+- to pick different 2nd/3rd stages, run mkosi sandbox -- mkosi --distribution <distro> --bootloader <2nd stage> --unified-kernel-images <unsigned/no> -f -i build
 
 # vim:filetype=mail:tw=74

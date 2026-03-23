@@ -12,7 +12,8 @@ ImageAddress (void *image, uint64_t size, uint64_t address);
 
 EFI_STATUS
 read_header(void *data, unsigned int datasize,
-	    PE_COFF_LOADER_IMAGE_CONTEXT *context);
+	    PE_COFF_LOADER_IMAGE_CONTEXT *context,
+	    bool check_secdir);
 
 EFI_STATUS verify_image(void *data, unsigned int datasize,
 			EFI_LOADED_IMAGE *li,
@@ -37,10 +38,17 @@ get_section_vma_by_name (char *name, size_t namesz,
 
 EFI_STATUS
 handle_image (void *data, unsigned int datasize,
-	      EFI_LOADED_IMAGE *li,
+	      EFI_LOADED_IMAGE *li, EFI_HANDLE image_handle,
 	      EFI_IMAGE_ENTRY_POINT *entry_point,
 	      EFI_PHYSICAL_ADDRESS *alloc_address,
-	      UINTN *alloc_pages);
+	      UINTN *alloc_pages, unsigned int *alloc_alignment,
+	      bool parent_verified);
+
+EFI_STATUS
+validate_cached_section(EFI_HANDLE parent_image_handle,
+			void *addr, UINTN size);
+void
+flush_cached_sections(EFI_HANDLE parent_image_handle);
 
 EFI_STATUS
 generate_hash (char *data, unsigned int datasize,
@@ -51,6 +59,9 @@ EFI_STATUS
 relocate_coff (PE_COFF_LOADER_IMAGE_CONTEXT *context,
 	       EFI_IMAGE_SECTION_HEADER *Section,
 	       void *orig, void *data);
+
+void
+get_shim_nx_capability(EFI_HANDLE image_handle);
 
 #endif /* !PE_H_ */
 // vim:fenc=utf-8:tw=75:noet
