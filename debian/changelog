@@ -1,9 +1,11 @@
-shim (16.1-1~deb12u1) UNRELEASED; urgency=medium
+shim (16.1-1~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]
   * Backport new shim release to bookworm
+    + Needed so we have a new shim signed with both Microsoft UEFI
+      Root CAs
   * Disable NX for the bookworm build
-    - We don't have a complete NX boot chain here.
+    + We don't have a complete NX boot chain here.
 
  -- Steve McIntyre <93sam@debian.org>  Mon, 23 Mar 2026 21:05:04 +0100
 
