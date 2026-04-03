@@ -45,7 +45,7 @@ COMMON_OPTIONS += \
 	VENDOR_DBX_FILE=$(DBX_LIST) \
 	EFIDIR=$(distributor) \
 	CROSS_COMPILE=$(DEB_HOST_GNU_TYPE)- \
-	CC=$(DEB_HOST_GNU_TYPE)-gcc-12 \
+	CC=gcc \
 	$(NULL)
 
 # Force shim to use the latest revocations by default to block some

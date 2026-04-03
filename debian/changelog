@@ -6,6 +6,7 @@ shim (16.1-2~deb12u1) bookworm; urgency=medium
       Root CAs
   * Disable NX for the bookworm build
     + We don't have a complete NX boot chain here.
+  * Also switch to using the default version of gcc in bookworm
 
  -- Steve McIntyre <93sam@debian.org>  Fri, 03 Apr 2026 17:11:35 +0100
 
