@@ -1,4 +1,4 @@
-shim (16.1-1~deb12u1) bookworm; urgency=medium
+shim (16.1-2~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]
   * Backport new shim release to bookworm
@@ -7,7 +7,17 @@ shim (16.1-1~deb12u1) bookworm; urgency=medium
   * Disable NX for the bookworm build
     + We don't have a complete NX boot chain here.
 
- -- Steve McIntyre <93sam@debian.org>  Mon, 23 Mar 2026 21:05:04 +0100
+ -- Steve McIntyre <93sam@debian.org>  Fri, 03 Apr 2026 17:11:35 +0100
+
+shim (16.1-2) unstable; urgency=medium
+
+  * Bump SBAT revocation level to 2025021800 aka
+    "shim,4\ngrub,5\n"
+    after discussion with shim reviewers team. Let's block the older
+    GRUB binaries which we know are problematic.
+  * Switch to using the default version of gcc. Closes: #1132054
+
+ -- Steve McIntyre <93sam@debian.org>  Fri, 03 Apr 2026 12:34:36 +0100
 
 shim (16.1-1) unstable; urgency=medium
 

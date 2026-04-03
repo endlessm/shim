@@ -51,7 +51,7 @@ COMMON_OPTIONS += \
 # Force shim to use the latest revocations by default to block some
 # older grub / peimage issues. This is:
 # "shim,4\ngrub,4\ngrub.peimage,2\n"
-COMMON_OPTIONS += SBAT_AUTOMATIC_DATE=2024040900
+COMMON_OPTIONS += SBAT_AUTOMATIC_DATE=2025021800
 
 # Disable NX for this build
 COMMON_OPTIONS += "POST_PROCESS_PE_FLAGS=-N"
