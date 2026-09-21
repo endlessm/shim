@@ -1,3 +1,16 @@
+shim (16.1-2~deb12u1endless1) master; urgency=medium
+
+  [ Dan Nicholson ]
+  * Don't repack upstream tarballs
+  * Add Endless gbp configuration
+  * Add vendor dbx file with revoked signing certificates
+
+  [ João Paulo Rechi Vita ]
+  * Create shim-efi-image package
+  * Vendor customization for Endless OS
+
+ -- Jian-Hong Pan <jhp@endlessaccess.org>  Mon, 21 Sep 2026 15:18:10 +0800
+
 shim (16.1-2~deb12u1) bookworm; urgency=medium
 
   [ Steve McIntyre ]
